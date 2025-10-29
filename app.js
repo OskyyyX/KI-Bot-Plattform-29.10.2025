@@ -1199,8 +1199,27 @@ class ChatManager {
             // Erstelle Nachrichten-Array
             const messages = [];
             
-            // Baue System-Prompt mit Persönlichkeit UND Datei-Kontext
-            let systemPrompt = this.personalities[botType] || "Du bist ein hilfsbereiter Assistent.";
+            // 🆕 AKTUELLES DATUM AUTOMATISCH HINZUFÜGEN
+            const heute = new Date();
+            const datumString = heute.toLocaleDateString('de-DE', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            const zeitString = heute.toLocaleTimeString('de-DE', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            // Baue System-Prompt mit DATUM als erstes (höchste Priorität!)
+            let systemPrompt = `📅 **WICHTIGES KONTEXT-WISSEN:**\n`;
+            systemPrompt += `Heute ist ${datumString}, ${zeitString} Uhr.\n`;
+            systemPrompt += `Aktuelles Jahr: ${heute.getFullYear()}\n`;
+            systemPrompt += `Aktueller Monat: ${heute.toLocaleDateString('de-DE', { month: 'long' })}\n\n`;
+            
+            // Füge Persönlichkeit hinzu
+            systemPrompt += this.personalities[botType] || "Du bist ein hilfsbereiter Assistent.";
             
             // Füge Agent-Fähigkeiten zum System-Prompt hinzu
             const availableTools = agentSystem.getAvailableTools(botType);
@@ -1210,7 +1229,8 @@ class ChatManager {
                 availableTools.forEach(tool => {
                     systemPrompt += `- ${tool.function.name}: ${tool.function.description}\n`;
                 });
-                systemPrompt += "\nWenn der Benutzer eine Aktion wünscht (z.B. 'Buche einen Termin'), nutze die verfügbaren Tools!";
+                systemPrompt += "\nWenn der Benutzer eine Aktion wünscht (z.B. 'Buche einen Termin' oder 'Zeig mir meine Termine'), nutze die verfügbaren Tools!";
+                systemPrompt += "\n⚠️ WICHTIG: Beachte das heutige Datum (siehe oben) bei relativen Zeitangaben wie 'morgen', 'nächste Woche', etc.";
             }
             
             // Füge hochgeladene Dateien als Kontext hinzu
@@ -1225,7 +1245,7 @@ class ChatManager {
                     systemPrompt += `Inhalt:\n${file.content}\n\n`;
                 });
                 
-                systemPrompt += "\n💡 **WICHTIG:** Beantworte Fragen basierend auf diesen Dokumenten. Wenn die Antwort in den Dokumenten steht, zitiere relevante Teile. Wenn die Information nicht in den Dokumenten ist, sage das ehrlich.";
+                systemPrompt += "\n💡 **WICHTIG:** Beantworte Fragen basierend auf diesen Dokumenten UND beachte das heutige Datum (siehe oben). Wenn die Antwort in den Dokumenten steht, zitiere relevante Teile. Wenn die Information nicht in den Dokumenten ist, sage das ehrlich.";
             }
             
             messages.push({

@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wissensbasis Test - KI-Bot mit Dateien</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .demo-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .demo-section h2 {
+            color: #495057;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-upload-zone {
+            border: 3px dashed #dee2e6;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .file-upload-zone:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .file-upload-zone.dragover {
+            border-color: #667eea;
+            background: #e7f3ff;
+        }
+
+        .file-list {
+            margin-top: 20px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #dee2e6;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .file-icon {
+            font-size: 2rem;
+        }
+
+        .chat-section {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #dee2e6;
+        }
+
+        .file-context-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .chat-message {
+            max-width: 80%;
+            padding: 12px 18px;
+            border-radius: 18px;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .chat-message.user {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-message.bot {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .chat-input-area input {
+            flex: 1;
+            padding: 12px 18px;
+            border: 1px solid #dee2e6;
+            border-radius: 25px;
+            font-size: 1rem;
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .example-questions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .example-btn {
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .example-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Wissensbasis-Integration Tester</h1>
+        <p class="subtitle">Testen Sie, wie Ihr Bot mit hochgeladenen Dateien arbeitet</p>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="fileCount">0</div>
+                <div class="stat-label">Hochgeladene Dateien</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalSize">0 KB</div>
+                <div class="stat-label">Gesamtgröße</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="messageCount">0</div>
+                <div class="stat-label">Chat-Nachrichten</div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3 style="margin-bottom: 10px;">💡 So funktioniert's:</h3>
+            <p><strong>1.</strong> Laden Sie eine oder mehrere Dateien hoch (z.B. termine.csv)</p>
+            <p><strong>2.</strong> Der Bot liest automatisch den Inhalt</p>
+            <p><strong>3.</strong> Stellen Sie Fragen zum Inhalt der Dateien</p>
+            <p><strong>4.</strong> Der Bot antwortet basierend auf den Dokumenten!</p>
+        </div>
+
+        <!-- File Upload -->
+        <div class="demo-section">
+            <h2><span>📁</span> Dateien hochladen</h2>
+            <div class="file-upload-zone" id="uploadZone">
+                <div style="font-size: 3rem; margin-bottom: 15px;">📤</div>
+                <p style="font-size: 1.1rem; margin-bottom: 10px;"><strong>Dateien hier ablegen</strong></p>
+                <p style="color: #666; font-size: 0.9rem;">oder klicken zum Auswählen</p>
+                <input type="file" id="fileInput" multiple style="display: none;">
+            </div>
+            <div class="file-list" id="fileList"></div>
+        </div>
+
+        <!-- Chat -->
+        <div class="demo-section">
+            <h2><span>💬</span> Mit dem Bot chatten</h2>
+            
+            <div class="example-questions">
+                <button class="example-btn" onclick="askQuestion('Welche Dateien hast du?')">
+                    📋 Welche Dateien hast du?
+                </button>
+                <button class="example-btn" onclick="askQuestion('Fasse den Inhalt zusammen')">
+                    📝 Fasse den Inhalt zusammen
+                </button>
+                <button class="example-btn" onclick="askQuestion('Welche Termine habe ich?')">
+                    📅 Welche Termine habe ich?
+                </button>
+                <button class="example-btn" onclick="askQuestion('Suche nach einem Begriff')">
+                    🔍 Suche nach einem Begriff
+                </button>
+            </div>
+
+            <div class="chat-section" style="margin-top: 20px;">
+                <div class="file-context-banner" id="contextBanner" style="display: none;">
+                    <span>🗄️</span>
+                    <span class="file-count" id="bannerCount">0 Dateien</span>
+                    <span id="bannerFiles" style="flex: 1; opacity: 0.9;">Bot hat Zugriff auf: ...</span>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-message bot">
+                        👋 Hallo! Lade Dateien hoch und ich kann dir Fragen dazu beantworten!
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="Stelle eine Frage zu den hochgeladenen Dateien..." 
+                           onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button class="send-btn" onclick="sendMessage()">Senden</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let files = [];
+        let messages = 0;
+
+        // File Upload Handler
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadZone.addEventListener('click', () => fileInput.click());
+        
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        async function handleFiles(fileList) {
+            for (const file of fileList) {
+                const reader = new FileReader();
+                
+                reader.onload = (e) => {
+                    const fileObj = {
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                        content: e.target.result
+                    };
+                    
+                    files.push(fileObj);
+                    updateFileList();
+                    updateStats();
+                    updateBanner();
+                    
+                    addBotMessage(`✅ Datei "${file.name}" erfolgreich hochgeladen! Ich habe jetzt Zugriff auf den Inhalt.`);
+                };
+                
+                reader.readAsText(file);
+            }
+        }
+
+        function updateFileList() {
+            const fileListDiv = document.getElementById('fileList');
+            fileListDiv.innerHTML = files.map((file, index) => `
+                <div class="file-item">
+                    <div class="file-info">
+                        <span class="file-icon">${getFileIcon(file.type)}</span>
+                        <div>
+                            <div style="font-weight: 600;">${file.name}</div>
+                            <div style="font-size: 0.85rem; color: #666;">
+                                ${formatFileSize(file.size)} • ${file.type || 'Unbekannter Typ'}
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="removeFile(${index})" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                        Löschen
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function removeFile(index) {
+            const fileName = files[index].name;
+            files.splice(index, 1);
+            updateFileList();
+            updateStats();
+            updateBanner();
+            addBotMessage(`🗑️ Datei "${fileName}" wurde entfernt.`);
+        }
+
+        function updateStats() {
+            document.getElementById('fileCount').textContent = files.length;
+            const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+            document.getElementById('totalSize').textContent = formatFileSize(totalBytes);
+        }
+
+        function updateBanner() {
+            const banner = document.getElementById('contextBanner');
+            if (files.length === 0) {
+                banner.style.display = 'none';
+            } else {
+                banner.style.display = 'flex';
+                document.getElementById('bannerCount').textContent = `${files.length} ${files.length === 1 ? 'Datei' : 'Dateien'}`;
+                document.getElementById('bannerFiles').textContent = `Bot hat Zugriff auf: ${files.map(f => f.name).join(', ')}`;
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            addUserMessage(message);
+            input.value = '';
+            
+            // Simuliere Bot-Antwort
+            setTimeout(() => {
+                processQuestion(message);
+            }, 500);
+        }
+
+        function askQuestion(question) {
+            document.getElementById('chatInput').value = question;
+            sendMessage();
+        }
+
+        function processQuestion(question) {
+            if (files.length === 0) {
+                addBotMessage('⚠️ Ich habe noch keine Dateien zum Analysieren. Bitte lade zuerst Dateien hoch!');
+                return;
+            }
+
+            // Demo-Antworten basierend auf Frage
+            if (question.toLowerCase().includes('dateien')) {
+                addBotMessage(`📁 Ich habe Zugriff auf ${files.length} Datei(en):\n${files.map((f, i) => `${i+1}. ${f.name} (${formatFileSize(f.size)})`).join('\n')}`);
+            } else if (question.toLowerCase().includes('zusammen')) {
+                const firstFile = files[0];
+                addBotMessage(`📝 Zusammenfassung von "${firstFile.name}":\n\n${firstFile.content.substring(0, 200)}...\n\n💡 Dies ist ein Beispiel. Mit echtem Mistral AI würde ich den vollständigen Inhalt intelligent zusammenfassen!`);
+            } else if (question.toLowerCase().includes('termin')) {
+                addBotMessage(`📅 Ich analysiere die Termine in den Dateien...\n\n💡 Mit der echten Mistral AI Integration würde ich jetzt alle Termine aus den CSV-Dateien extrahieren und strukturiert darstellen!`);
+            } else {
+                addBotMessage(`🤖 Ich würde jetzt den Inhalt aller ${files.length} Datei(en) durchsuchen und deine Frage beantworten!\n\n💡 In der echten Anwendung nutzt der Bot Mistral AI, um intelligente Antworten basierend auf den Dateiinhalten zu geben.`);
+            }
+        }
+
+        function addUserMessage(text) {
+            const chatDiv = document.getElementById('chatMessages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'chat-message user';
+            msgDiv.textContent = text;
+            chatDiv.appendChild(msgDiv);
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+            messages++;
+            document.getElementById('messageCount').textContent = messages;
+        }
+
+        function addBotMessage(text) {
+            const chatDiv = document.getElementById('chatMessages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'chat-message bot';
+            msgDiv.textContent = text;
+            chatDiv.appendChild(msgDiv);
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+            messages++;
+            document.getElementById('messageCount').textContent = messages;
+        }
+
+        function getFileIcon(type) {
+            if (type.includes('csv') || type.includes('excel')) return '📊';
+            if (type.includes('pdf')) return '📄';
+            if (type.includes('text')) return '📝';
+            if (type.includes('json')) return '🔧';
+            return '📁';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        console.log('📚 Wissensbasis-Tester geladen!');
+        console.log('💡 Lade Dateien hoch und teste die Integration!');
+    </script>
+</body>
+</html>

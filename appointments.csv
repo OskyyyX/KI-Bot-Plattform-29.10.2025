@@ -1,0 +1,11 @@
+Date,Time,Event,Description,Location,Participants,Status
+2025-10-10,09:00-10:30,Board Meeting,Quarterly planning and budget discussion,Conference Room A,"Hans Müller, Anna Schmidt, Peter Weber",Confirmed
+2025-10-11,14:00-15:00,AI Bot Project Meeting,Status update on AI Bot project,Online (Teams),"Sarah Klein, Tim Meyer",Confirmed
+2025-10-14,10:00-11:30,Customer Workshop,Product presentation for XYZ GmbH,Customer Center,"Maria Garcia, Thomas Wolf, Customer (3 persons)",Confirmed
+2025-10-15,13:00-14:00,Team Lunch,Team lunch with development team,Cafeteria,Entire Development Team,Planned
+2025-10-16,11:00-12:00,Tech Review,Code review and architecture discussion,Meeting Room 2,"Development Team, Tech Lead",Confirmed
+2025-10-17,15:00-16:30,Training,AI Development Best Practices,Training Room,"Development Team, External Trainers",Planned
+2025-10-21,09:30-10:30,Sprint Planning,Planning next sprint,Scrum Room,"Scrum Team, Product Owner",Confirmed
+2025-10-22,16:00-17:00,Retrospective,Sprint retrospective,Online (Zoom),"Development Team, Scrum Master",Planned
+2025-10-23,10:00-11:00,Sales Meeting,Alignment with sales,Conference Room B,"Sales Team, Product Management",Confirmed
+2025-10-24,14:00-15:30,Strategy Meeting,Q4 2025 Planning,Executive Floor,"Management Team, Department Heads",Confirmed

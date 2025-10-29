@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KI-Bot Platform - Admin Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Google API Client Library -->
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <img src="logo.png" alt="KI-Bot Logo" class="logo">
+                <h2>KI-Bot Platform</h2>
+            </div>
+            <ul class="nav-links">
+                <li class="active" data-page="dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </li>
+                <li data-page="bots">
+                    <i class="fas fa-robot"></i>
+                    <span>Meine Bots</span>
+                </li>
+                <li data-page="config">
+                    <i class="fas fa-cogs"></i>
+                    <span>Konfiguration</span>
+                </li>
+                <li data-page="analytics">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Analytik</span>
+                </li>
+                <li data-page="billing">
+                    <i class="fas fa-credit-card"></i>
+                    <span>Abrechnung</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Dashboard Page -->
+            <div class="page active" id="dashboard">
+                <header class="page-header">
+                    <h1>Dashboard</h1>
+                    <div class="user-menu">
+                        <span class="user-name">Max Mustermann</span>
+                        <img src="avatar.png" alt="User Avatar" class="avatar">
+                    </div>
+                </header>
+
+                <div class="dashboard-grid">
+                    <!-- Stats Cards -->
+                    <div class="stats-card">
+                        <h3>Aktive Bots</h3>
+                        <p class="stat-number">5</p>
+                    </div>
+                    <div class="stats-card">
+                        <h3>Gespräche heute</h3>
+                        <p class="stat-number">127</p>
+                    </div>
+                    <div class="stats-card">
+                        <h3>API Aufrufe</h3>
+                        <p class="stat-number">1,234</p>
+                    </div>
+                    <div class="stats-card">
+                        <h3>Kosten heute</h3>
+                        <p class="stat-number">€2.50</p>
+                    </div>
+                </div>
+
+                <div class="quick-actions">
+                    <button class="btn primary">
+                        <i class="fas fa-plus"></i>
+                        Neuen Bot erstellen
+                    </button>
+                    <button class="btn secondary">
+                        <i class="fas fa-upload"></i>
+                        Daten importieren
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bot Configuration Page -->
+            <div class="page" id="bots">
+                <header class="page-header">
+                    <h1>Bot-Konfiguration</h1>
+                </header>
+                
+                <div class="bot-list">
+                    <!-- Bot Card -->
+                    <div class="bot-card">
+                        <div class="bot-header">
+                            <h3>Website Bot</h3>
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="bot-settings">
+                            <div class="setting-group">
+                                <label>Mistral AI API-Konfiguration</label>
+                                <div class="api-config">
+                                    <div class="api-key-input">
+                                        <label>Mistral API-Schlüssel</label>
+                                        <div class="input-with-validation">
+                                            <input type="password" id="apiKeyInput" placeholder="Geben Sie Ihren Mistral AI API-Schlüssel ein..." class="api-key-field">
+                                            <button class="btn secondary" onclick="saveApiKey()">
+                                                <i class="fas fa-save"></i> Speichern
+                                            </button>
+                                            <button class="btn secondary validate-api-btn" onclick="validateApiKey()">
+                                                <i class="fas fa-check"></i> Validieren
+                                            </button>
+                                            <div class="api-status"></div>
+                                        </div>
+                                        
+                                        <script>
+                                        function saveApiKey() {
+                                            const key = document.getElementById("apiKeyInput").value;
+                                            if (key && key.trim().length > 0) {
+                                                localStorage.setItem("mistral_api_key", key);
+                                                alert("Mistral AI API-Key gespeichert ✅");
+                                            } else {
+                                                alert("Ungültiger API-Key!");
+                                            }
+                                        }
+                                        </script>
+                                    </div>
+                                    
+                                    <div class="model-selection">
+                                        <label>Mistral AI Modell</label>
+                                        <select id="modelSelect" class="model-select">
+                                            <optgroup label="Mistral Modelle">
+                                                <option value="mistral-large-latest">Mistral Large (neueste Version)</option>
+                                                <option value="mistral-medium-latest">Mistral Medium</option>
+                                                <option value="mistral-small-latest">Mistral Small</option>
+                                                <option value="open-mistral-7b">Open Mistral 7B</option>
+                                                <option value="open-mixtral-8x7b">Open Mixtral 8x7B</option>
+                                                <option value="open-mixtral-8x22b">Open Mixtral 8x22B</option>
+                                            </optgroup>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <label>🤖 Agent-Funktionen (API-Verbindungen)</label>
+                                <div class="info-hint" style="background: #fff3e0; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ff9800;">
+                                    <p style="margin: 0; font-size: 0.875rem; color: #e65100;">
+                                        🚀 <strong>NEU:</strong> Der Bot kann als intelligenter Agent handeln und Aktionen ausführen (z.B. Termine buchen, E-Mails senden).
+                                    </p>
+                                </div>
+                                <div class="agent-config">
+                                    <div class="agent-api-item">
+                                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                            <div style="display: flex; align-items: center; gap: 10px;">
+                                                <i class="fab fa-google" style="font-size: 1.5rem; color: #4285f4;"></i>
+                                                <h4 style="margin: 0;">Google Calendar API</h4>
+                                            </div>
+                                            <label class="switch">
+                                                <input type="checkbox" id="websiteGoogleCalendarEnabled">
+                                                <span class="slider"></span>
+                                            </label>
+                                        </div>
+                                        <div id="websiteGoogleCalendarConfig" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 10px;">
+                                            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; border-radius: 4px; margin-bottom: 15px;">
+                                                <strong>📋 Google Calendar API Setup (OAuth 2.0 mit Redirect)</strong><br>
+                                                <small style="color: #856404; line-height: 1.6;">
+                                                    <strong>Wie in Ihrer Google Console konfiguriert:</strong><br>
+                                                    ✅ Client-ID<br>
+                                                    ✅ Clientschlüssel (Client Secret)<br>
+                                                    ✅ Autorisierte JavaScript-Quellen<br>
+                                                    ✅ Autorisierte Weiterleitungs-URIs
+                                                </small>
+                                            </div>
+                                            
+                                            <!-- Client ID -->
+                                            <div style="margin-bottom: 15px;">
+                                                <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 5px;">
+                                                    <span style="background: #2196f3; color: white; border-radius: 50%; padding: 2px 7px; font-size: 0.75rem; margin-right: 5px;">1</span>
+                                                    Client-ID <span style="color: #ef4444;">*</span>
+                                                </label>
+                                                <input type="text" id="websiteGoogleClientId" placeholder="123456789-abc...apps.googleusercontent.com" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; font-family: monospace; font-size: 0.85rem;" required>
+                                                <small style="color: #666; display: block; margin-top: 5px;">
+                                                    📌 Aus Ihrer OAuth 2.0-Client-ID in Google Console
+                                                </small>
+                                            </div>
+
+                                            <!-- Client Secret -->
+                                            <div style="margin-bottom: 15px;">
+                                                <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 5px;">
+                                                    <span style="background: #2196f3; color: white; border-radius: 50%; padding: 2px 7px; font-size: 0.75rem; margin-right: 5px;">2</span>
+                                                    Clientschlüssel (Client Secret) <span style="color: #ef4444;">*</span>
+                                                </label>
+                                                <input type="password" id="websiteGoogleClientSecret" placeholder="GOCSPX-..." style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; font-family: monospace; font-size: 0.85rem;" required>
+                                                <small style="color: #666; display: block; margin-top: 5px;">
+                                                    📌 Clientschlüssel aus Ihrer OAuth 2.0-Client-ID
+                                                </small>
+                                            </div>
+
+                                            <!-- Redirect URI (automatisch) -->
+                                            <div style="margin-bottom: 15px;">
+                                                <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 5px;">
+                                                    <span style="background: #2196f3; color: white; border-radius: 50%; padding: 2px 7px; font-size: 0.75rem; margin-right: 5px;">3</span>
+                                                    Redirect URI (automatisch erkannt)
+                                                </label>
+                                                <input type="text" id="websiteGoogleRedirectUri" readonly style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; font-family: monospace; font-size: 0.85rem; background: #e9ecef;">
+                                                <small style="color: #666; display: block; margin-top: 5px;">
+                                                    ⚠️ <strong>Wichtig:</strong> Diesen URI in Google Console unter "Autorisierte Weiterleitungs-URIs" hinzufügen!
+                                                </small>
+                                            </div>
+
+
+                                            <!-- Action Buttons -->
+                                            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                                                <button class="btn primary" onclick="initializeGoogleAuth('website')" style="flex: 1; padding: 12px; font-size: 0.95rem;">
+                                                    <i class="fab fa-google"></i> 🔗 Mit Google verbinden
+                                                </button>
+                                                <button class="btn primary" onclick="saveAgentConfig('website', 'google')" style="flex: 1; padding: 12px; font-size: 0.95rem; background: #4caf50;">
+                                                    <i class="fas fa-save"></i> 💾 Speichern
+                                                </button>
+                                            </div>
+                                            
+                                            <div id="websiteGoogleStatus" style="margin-top: 12px; padding: 10px; border-radius: 6px; font-size: 0.85rem;"></div>
+                                        </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <label>Bot-Persönlichkeit & Verhalten</label>
+                                <div class="info-hint" style="background: #e3f2fd; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #2196f3;">
+                                    <p style="margin: 0; font-size: 0.875rem; color: #1565c0;">
+                                        💡 <strong>Tipp:</strong> Beschreiben Sie hier in einfachen Sätzen, wie sich Ihr Bot verhalten soll. 
+                                        Zum Beispiel: "Du bist ein freundlicher Support-Mitarbeiter. Du antwortest kurz und präzise. Du verwendest keine Emojis."
+                                    </p>
+                                </div>
+                                <div class="bot-personality">
+                                    <div class="personality-templates" style="margin-bottom: 15px; display: flex; gap: 8px; flex-wrap: wrap;">
+                                        <button class="btn secondary" style="font-size: 0.8rem; padding: 0.5rem 1rem;" onclick="loadPersonalityTemplate('website', 'professional')">
+                                            👔 Professionell
+                                        </button>
+                                        <button class="btn secondary" style="font-size: 0.8rem; padding: 0.5rem 1rem;" onclick="loadPersonalityTemplate('website', 'friendly')">
+                                            😊 Freundlich
+                                        </button>
+                                        <button class="btn secondary" style="font-size: 0.8rem; padding: 0.5rem 1rem;" onclick="loadPersonalityTemplate('website', 'technical')">
+                                            🔧 Technisch
+                                        </button>
+                                        <button class="btn secondary" style="font-size: 0.8rem; padding: 0.5rem 1rem;" onclick="loadPersonalityTemplate('website', 'sales')">
+                                            💼 Verkauf
+                                        </button>
+                                    </div>
+                                    <textarea id="websiteBotPersonality" class="personality-input" placeholder="Beschreibe hier in eigenen Worten, wie sich der Bot verhalten soll...&#10;&#10;Beispiel: Du bist ein freundlicher Kundenservice-Assistent für ein Tech-Unternehmen. Du beantwortest Fragen höflich und professionell. Du sprichst die Kunden mit 'Sie' an und bist immer hilfsbereit. Bei technischen Fragen gibst du detaillierte Antworten."></textarea>
+                                    <button class="btn primary" onclick="saveBotPersonality('website')" style="margin-top: 10px;">
+                                        <i class="fas fa-save"></i> Persönlichkeit speichern
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <label>Bot testen (Chat)</label>
+                                <div class="chat-config">
+                                    <div class="chat-window">
+                                        <div id="websiteFileContext" class="file-context-banner" style="display: none;"></div>
+                                        <div class="chat-messages" id="websiteBotChat">
+                                            <!-- Chat-Nachrichten werden hier angezeigt -->
+                                        </div>
+                                        <div class="chat-input">
+                                            <textarea placeholder="Teste deinen Bot hier..." id="websiteBotPrompt"></textarea>
+                                            <button class="btn primary" onclick="sendBotInstruction('website')">
+                                                <i class="fas fa-paper-plane"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <label>Wissensbasis</label>
+                                <div class="knowledge-base">
+                                    <div class="file-section">
+                                        <h4>Dokumente & Dateien</h4>
+                                        <div class="file-upload-container">
+                                            <div class="file-upload-box" id="websiteUploadBox">
+                                                <i class="fas fa-cloud-upload-alt"></i>
+                                                <p>Dateien hier ablegen oder klicken zum Hochladen</p>
+                                                <span class="file-types">Unterstützte Formate: PDF, Word, Excel, CSV, TXT, JSON, XML, etc.</span>
+                                                <input type="file" id="websiteFileUpload" multiple accept=".pdf,.doc,.docx,.xlsx,.csv,.txt,.json,.xml">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="uploaded-files">
+                                        <h4>Hochgeladene Dateien</h4>
+                                        <div class="file-list" id="websiteFileList">
+                                            <!-- Dateien werden hier dynamisch eingefügt -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bot-actions">
+                            <button class="btn primary">Speichern & Aktivieren</button>
+                        </div>
+                    </div>
+
+                    <!-- WhatsApp Bot Card -->
+                    <div class="bot-card">
+                        <div class="bot-header">
+                            <h3>WhatsApp Bot</h3>
+                            <label class="switch">
+                                <input type="checkbox">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="bot-settings">
+                            <div class="setting-group">
+                                <label>API-Konfiguration</label>
+                                <div class="api-tabs">
+                                    <div class="tab-buttons">
+                                        <button class="tab-btn active" onclick="switchTab('whatsapp', 'whatsapp')">
+                                            <i class="fab fa-whatsapp"></i> WhatsApp
+                                        </button>
+                                        <button class="tab-btn" onclick="switchTab('whatsapp', 'mistral')">
+                                            <i class="fas fa-robot"></i> Mistral AI
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="tab-content active" id="whatsappTab">
+                                        <div class="whatsapp-config">
+                                            <div class="input-group">
+                                                <label>Telefonnummer</label>
+                                                <input type="tel" placeholder="+49 123 4567890">
+                                            </div>
+                                            <div class="input-group">
+                                                <label>WhatsApp Business API</label>
+                                                <input type="text" placeholder="API-Key eingeben">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="tab-content" id="mistralTab">
+                                        <div class="mistral-config">
+                                            <div class="input-group">
+                                                <label>Mistral AI API-Schlüssel</label>
+                                                <div class="api-input-group">
+                                                    <input type="password" id="whatsappMistralKey" placeholder="Geben Sie Ihren Mistral AI API-Schlüssel ein..." class="api-key-field">
+                                                    <button class="btn secondary validate-api-btn" onclick="validateWhatsappApiKey()">
+                                                        <i class="fas fa-check"></i> Validieren
+                                                    </button>
+                                                </div>
+                                                <div class="api-status" id="whatsappApiStatus"></div>
+                                            </div>
+                                            
+                                            <div class="input-group">
+                                                <label>Mistral AI Modell</label>
+                                                <div class="model-select-wrapper">
+                                                    <select id="whatsappModelSelect" class="model-select">
+                                                        <optgroup label="Mistral Modelle">
+                                                            <option value="mistral-large-latest">Mistral Large (neueste Version)</option>
+                                                            <option value="mistral-medium-latest">Mistral Medium</option>
+                                                            <option value="mistral-small-latest">Mistral Small</option>
+                                                            <option value="open-mistral-7b">Open Mistral 7B</option>
+                                                            <option value="open-mixtral-8x7b">Open Mixtral 8x7B</option>
+                                                            <option value="open-mixtral-8x22b">Open Mixtral 8x22B</option>
+                                                        </optgroup>
+                                                    </select>
+                                                    <div class="model-info">
+                                                        <i class="fas fa-info-circle"></i>
+                                                        <span class="model-tooltip">Wählen Sie ein Mistral Modell basierend auf Ihren Anforderungen an Leistung und Kosten.</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <label>🤖 Agent-Funktionen (API-Verbindungen)</label>
+                                <div class="info-hint" style="background: #fff3e0; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ff9800;">
+                                    <p style="margin: 0; font-size: 0.875rem; color: #e65100;">
+                                        🚀 <strong>NEU:</strong> Der WhatsApp-Bot kann als intelligenter Agent handeln und Aktionen ausführen.
+                                    </p>
+                                </div>
+                                <div class="agent-config">
+                                    <div class="agent-api-item">
+                                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                            <div style="display: flex; align-items: center; gap: 10px;">
+                                                <i class="fab fa-google" style="font-size: 1.5rem; color: #4285f4;"></i>
+                                                <h4 style="margin: 0;">Google Calendar API</h4>
+                                            </div>
+                                            <label class="switch">
+                                                <input type="checkbox" id="whatsappGoogleCalendarEnabled">
+                                                <span class="slider"></span>
+                                            </label>
+                                        </div>
+                                        <div id="whatsappGoogleCalendarConfig" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 10px;">
+                                            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; border-radius: 4px; margin-bottom: 15px;">
+                                                <strong>📋 Google Calendar API Setup (OAuth 2.0 mit Redirect)</strong><br>
+                                                <small style="color: #856404; line-height: 1.6;">
+                                                    <strong>Wie in Ihrer Google Console konfiguriert:</strong><br>
+                                                    ✅ Client-ID<br>
+                                                    ✅ Clientschlüssel (Client Secret)<br>
+                                                    ✅ Autorisierte JavaScript-Quellen<br>
+                                                    ✅ Autorisierte Weiterleitungs-URIs
+                                                </small>
+                                            </div>
+                                            
+                                            <!-- Client ID -->
+                                            <div style="margin-bottom: 15px;">
+                                                <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 5px;">
+                                                    <span style="background: #25d366; color: white; border-radius: 50%; padding: 2px 7px; font-size: 0.75rem; margin-right: 5px;">1</span>
+                                                    Client-ID <span style="color: #ef4444;">*</span>
+                                                </label>
+                                                <input type="text" id="whatsappGoogleClientId" placeholder="123456789-abc...apps.googleusercontent.com" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; font-family: monospace; font-size: 0.85rem;" required>
+                                                <small style="color: #666; display: block; margin-top: 5px;">
+                                                    📌 Aus Ihrer OAuth 2.0-Client-ID in Google Console
+                                                </small>
+                                            </div>
+
+                                            <!-- Client Secret -->
+                                            <div style="margin-bottom: 15px;">
+                                                <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 5px;">
+                                                    <span style="background: #25d366; color: white; border-radius: 50%; padding: 2px 7px; font-size: 0.75rem; margin-right: 5px;">2</span>
+                                                    Clientschlüssel (Client Secret) <span style="color: #ef4444;">*</span>
+                                                </label>
+                                                <input type="password" id="whatsappGoogleClientSecret" placeholder="GOCSPX-..." style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; font-family: monospace; font-size: 0.85rem;" required>
+                                                <small style="color: #666; display: block; margin-top: 5px;">
+                                                    📌 Clientschlüssel aus Ihrer OAuth 2.0-Client-ID
+                                                </small>
+                                            </div>
+
+                                            <!-- Redirect URI (automatisch) -->
+                                            <div style="margin-bottom: 15px;">
+                                                <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 5px;">
+                                                    <span style="background: #25d366; color: white; border-radius: 50%; padding: 2px 7px; font-size: 0.75rem; margin-right: 5px;">3</span>
+                                                    Redirect URI (automatisch erkannt)
+                                                </label>
+                                                <input type="text" id="whatsappGoogleRedirectUri" readonly style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; font-family: monospace; font-size: 0.85rem; background: #e9ecef;">
+                                                <small style="color: #666; display: block; margin-top: 5px;">
+                                                    ⚠️ <strong>Wichtig:</strong> Diesen URI in Google Console unter "Autorisierte Weiterleitungs-URIs" hinzufügen!
+                                                </small>
+                                            </div>
+
+                                            <!-- Action Buttons -->
+                                            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                                                <button class="btn primary" onclick="initializeGoogleAuth('whatsapp')" style="flex: 1; padding: 12px; font-size: 0.95rem;">
+                                                    <i class="fab fa-google"></i> 🔗 Mit Google verbinden
+                                                </button>
+                                                <button class="btn primary" onclick="saveAgentConfig('whatsapp', 'google')" style="flex: 1; padding: 12px; font-size: 0.95rem; background: #4caf50;">
+                                                    <i class="fas fa-save"></i> 💾 Speichern
+                                                </button>
+                                            </div>
+                                            
+                                            <div id="whatsappGoogleStatus" style="margin-top: 12px; padding: 10px; border-radius: 6px; font-size: 0.85rem;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <label>Bot-Persönlichkeit & Verhalten</label>
+                                <div class="info-hint" style="background: #e8f5e9; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #4caf50;">
+                                    <p style="margin: 0; font-size: 0.875rem; color: #2e7d32;">
+                                        💡 <strong>Tipp:</strong> Beschreiben Sie hier in einfachen Sätzen, wie sich Ihr WhatsApp-Bot verhalten soll. 
+                                        Zum Beispiel: "Du bist locker und verwendest Emojis 😊. Du antwortest schnell und nutzt 'du'."
+                                    </p>
+                                </div>
+                                <div class="bot-personality">
+                                    <div class="personality-templates" style="margin-bottom: 15px; display: flex; gap: 8px; flex-wrap: wrap;">
+                                        <button class="btn secondary" style="font-size: 0.8rem; padding: 0.5rem 1rem;" onclick="loadPersonalityTemplate('whatsapp', 'casual')">
+                                            😎 Locker
+                                        </button>
+                                        <button class="btn secondary" style="font-size: 0.8rem; padding: 0.5rem 1rem;" onclick="loadPersonalityTemplate('whatsapp', 'helpful')">
+                                            🤝 Hilfsbereit
+                                        </button>
+                                        <button class="btn secondary" style="font-size: 0.8rem; padding: 0.5rem 1rem;" onclick="loadPersonalityTemplate('whatsapp', 'fun')">
+                                            🎉 Spaßig
+                                        </button>
+                                        <button class="btn secondary" style="font-size: 0.8rem; padding: 0.5rem 1rem;" onclick="loadPersonalityTemplate('whatsapp', 'support')">
+                                            💬 Support
+                                        </button>
+                                    </div>
+                                    <textarea id="whatsappBotPersonality" class="personality-input" placeholder="Beschreibe hier in eigenen Worten, wie sich der WhatsApp-Bot verhalten soll...&#10;&#10;Beispiel: Du bist ein lockerer und freundlicher WhatsApp-Assistent. Du verwendest Emojis und sprichst die Leute mit 'du' an. Du bist schnell und präzise in deinen Antworten. Du bist immer positiv und hilfsbereit."></textarea>
+                                    <button class="btn primary" onclick="saveBotPersonality('whatsapp')" style="margin-top: 10px;">
+                                        <i class="fas fa-save"></i> Persönlichkeit speichern
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <label>Bot testen (Chat)</label>
+                                <div class="chat-config">
+                                    <div class="chat-window whatsapp-style">
+                                        <div id="whatsappFileContext" class="file-context-banner" style="display: none;"></div>
+                                        <div class="chat-messages" id="whatsappBotChat">
+                                            <!-- Chat-Nachrichten werden hier angezeigt -->
+                                        </div>
+                                        <div class="chat-input">
+                                            <textarea placeholder="Teste deinen WhatsApp-Bot hier..." id="whatsappBotPrompt"></textarea>
+                                            <button class="btn primary" onclick="sendBotInstruction('whatsapp')">
+                                                <i class="fas fa-paper-plane"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <label>Wissensbasis für WhatsApp</label>
+                                <div class="knowledge-base">
+                                    <div class="file-section">
+                                        <h4>WhatsApp-Dokumente & Dateien</h4>
+                                        <div class="file-upload-container">
+                                            <div class="file-upload-box" id="whatsappUploadBox">
+                                                <i class="fas fa-cloud-upload-alt"></i>
+                                                <p>Dateien hier ablegen oder klicken zum Hochladen</p>
+                                                <span class="file-types">Unterstützte Formate: PDF, Word, Excel, CSV, TXT, JSON, XML, etc.</span>
+                                                <input type="file" id="whatsappFileUpload" multiple accept=".pdf,.doc,.docx,.xlsx,.csv,.txt,.json,.xml">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="uploaded-files">
+                                        <h4>Hochgeladene Dateien</h4>
+                                        <div class="file-list" id="whatsappFileList">
+                                            <!-- Dateien werden hier dynamisch eingefügt -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bot-actions">
+                            <button class="btn primary">Speichern & Aktivieren</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal für Bot-Erstellung -->
+    <div class="modal" id="createBotModal">
+        <div class="modal-content">
+            <h2>Neuen Bot erstellen</h2>
+            <form id="createBotForm">
+                <div class="form-group">
+                    <label>Bot-Name</label>
+                    <input type="text" required>
+                </div>
+                <div class="form-group">
+                    <label>Bot-Typ</label>
+                    <select required>
+                        <option value="website">Website Chat</option>
+                        <option value="whatsapp">WhatsApp</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>KI-Modell</label>
+                    <select required>
+                        <option value="mistral-large">Mistral Large</option>
+                        <option value="mistral-medium">Mistral Medium</option>
+                        <option value="mistral-small">Mistral Small</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn secondary" onclick="closeModal()">Abbrechen</button>
+                    <button type="submit" class="btn primary">Erstellen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    
+    <!-- Google API Bereitschafts-Check -->
+    <script>
+        // Warte bis Google APIs vollständig geladen sind
+        let googleApiCheckInterval;
+        let googleApiLoaded = false;
+        
+        function checkGoogleAPIs() {
+            if (typeof gapi !== 'undefined' && typeof google !== 'undefined' && google.accounts) {
+                googleApiLoaded = true;
+                console.log('✅ Google APIs erfolgreich geladen!');
+                if (googleApiCheckInterval) {
+                    clearInterval(googleApiCheckInterval);
+                }
+            }
+        }
+        
+        // Prüfe alle 500ms ob Google APIs geladen sind
+        googleApiCheckInterval = setInterval(checkGoogleAPIs, 500);
+        
+        // Nach 10 Sekunden aufgeben
+        setTimeout(() => {
+            if (!googleApiLoaded) {
+                console.warn('⚠️ Google APIs konnten nicht geladen werden. Google Calendar-Funktionen sind möglicherweise nicht verfügbar.');
+                clearInterval(googleApiCheckInterval);
+            }
+        }, 10000);
+    </script>
+</body>
+</html>

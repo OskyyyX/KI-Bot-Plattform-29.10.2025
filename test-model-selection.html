@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mistral AI Modellauswahl - Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        .test-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 2px solid #e9ecef;
+        }
+
+        .test-section h2 {
+            color: #495057;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon {
+            font-size: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        select:hover {
+            border-color: #667eea;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .model-info {
+            background: white;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        .model-info strong {
+            color: #667eea;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .current-selection {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+
+        .current-selection h3 {
+            color: #856404;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .current-selection p {
+            color: #856404;
+            font-size: 0.9rem;
+            margin: 5px 0;
+        }
+
+        .test-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-top: 15px;
+        }
+
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .test-button:active {
+            transform: translateY(0);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge.premium {
+            background: #ffd700;
+            color: #333;
+        }
+
+        .badge.opensource {
+            background: #28a745;
+            color: white;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+        }
+
+        .info-box p {
+            color: #1565c0;
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Mistral AI Modellauswahl Tester</h1>
+        <p class="subtitle">Testen Sie die automatische Modellauswahl und -speicherung</p>
+
+        <div class="info-box">
+            <p><strong>ℹ️ So funktioniert's:</strong></p>
+            <p>✅ Wählen Sie ein Modell aus → Es wird <strong>automatisch gespeichert</strong></p>
+            <p>✅ Laden Sie die Seite neu (F5) → Das Modell bleibt <strong>ausgewählt</strong></p>
+            <p>✅ Verschiedene Modelle für Website & WhatsApp möglich</p>
+        </div>
+
+        <!-- Website Bot -->
+        <div class="test-section">
+            <h2><span class="icon">🌐</span> Website Bot Modell</h2>
+            <label for="websiteModel">Wähle ein Mistral AI Modell:</label>
+            <select id="websiteModel">
+                <optgroup label="🚀 Premium Modelle">
+                    <option value="mistral-large-latest">Mistral Large (neueste Version) - Beste Qualität</option>
+                    <option value="mistral-medium-latest">Mistral Medium - Ausgewogen</option>
+                    <option value="mistral-small-latest">Mistral Small - Schnell & Günstig</option>
+                </optgroup>
+                <optgroup label="🌟 Open-Source Modelle">
+                    <option value="open-mistral-7b">Open Mistral 7B - Sehr günstig</option>
+                    <option value="open-mixtral-8x7b">Open Mixtral 8x7B - Gute Leistung</option>
+                    <option value="open-mixtral-8x22b">Open Mixtral 8x22B - Beste Open-Source</option>
+                </optgroup>
+            </select>
+            <div id="websiteStatus" class="status"></div>
+            <div class="model-info">
+                <strong>💡 Hinweis:</strong> Das ausgewählte Modell wird automatisch im Browser gespeichert und bei jedem Chat verwendet.
+            </div>
+        </div>
+
+        <!-- WhatsApp Bot -->
+        <div class="test-section">
+            <h2><span class="icon">📱</span> WhatsApp Bot Modell</h2>
+            <label for="whatsappModel">Wähle ein Mistral AI Modell:</label>
+            <select id="whatsappModel">
+                <optgroup label="🚀 Premium Modelle">
+                    <option value="mistral-large-latest">Mistral Large (neueste Version) - Beste Qualität</option>
+                    <option value="mistral-medium-latest">Mistral Medium - Ausgewogen</option>
+                    <option value="mistral-small-latest">Mistral Small - Schnell & Günstig</option>
+                </optgroup>
+                <optgroup label="🌟 Open-Source Modelle">
+                    <option value="open-mistral-7b">Open Mistral 7B - Sehr günstig</option>
+                    <option value="open-mixtral-8x7b">Open Mixtral 8x7B - Gute Leistung</option>
+                    <option value="open-mixtral-8x22b">Open Mixtral 8x22B - Beste Open-Source</option>
+                </optgroup>
+            </select>
+            <div id="whatsappStatus" class="status"></div>
+            <div class="model-info">
+                <strong>💡 Hinweis:</strong> WhatsApp Bot kann ein anderes Modell verwenden als der Website Bot!
+            </div>
+        </div>
+
+        <!-- Aktuelle Auswahl -->
+        <div class="current-selection">
+            <h3>📊 Aktuell gespeicherte Auswahl:</h3>
+            <p id="currentWebsite"><strong>Website Bot:</strong> Wird geladen...</p>
+            <p id="currentWhatsapp"><strong>WhatsApp Bot:</strong> Wird geladen...</p>
+            <button class="test-button" onclick="showCurrentModels()">🔄 Aktualisieren</button>
+        </div>
+    </div>
+
+    <script>
+        // Beim Laden: Gespeicherte Modelle aus localStorage holen
+        window.addEventListener('DOMContentLoaded', () => {
+            // Website Bot Modell laden
+            const savedWebsiteModel = localStorage.getItem('website_model') || 'mistral-large-latest';
+            document.getElementById('websiteModel').value = savedWebsiteModel;
+            
+            // WhatsApp Bot Modell laden
+            const savedWhatsappModel = localStorage.getItem('whatsapp_model') || 'mistral-large-latest';
+            document.getElementById('whatsappModel').value = savedWhatsappModel;
+
+            // Aktuelle Auswahl anzeigen
+            showCurrentModels();
+
+            console.log('✅ Modelle aus localStorage geladen:');
+            console.log('   Website:', savedWebsiteModel);
+            console.log('   WhatsApp:', savedWhatsappModel);
+        });
+
+        // Website Bot Modell ändern
+        document.getElementById('websiteModel').addEventListener('change', (e) => {
+            const selectedModel = e.target.value;
+            
+            // Speichern im localStorage
+            localStorage.setItem('website_model', selectedModel);
+            
+            // Status anzeigen
+            const status = document.getElementById('websiteStatus');
+            status.className = 'status success';
+            status.textContent = `✅ Website Bot Modell gespeichert: ${selectedModel}`;
+            
+            // Visuelles Feedback
+            e.target.style.backgroundColor = '#d4edda';
+            setTimeout(() => {
+                e.target.style.backgroundColor = 'white';
+            }, 500);
+
+            showCurrentModels();
+            
+            console.log('✅ Website Bot Modell gespeichert:', selectedModel);
+        });
+
+        // WhatsApp Bot Modell ändern
+        document.getElementById('whatsappModel').addEventListener('change', (e) => {
+            const selectedModel = e.target.value;
+            
+            // Speichern im localStorage
+            localStorage.setItem('whatsapp_model', selectedModel);
+            
+            // Status anzeigen
+            const status = document.getElementById('whatsappStatus');
+            status.className = 'status success';
+            status.textContent = `✅ WhatsApp Bot Modell gespeichert: ${selectedModel}`;
+            
+            // Visuelles Feedback
+            e.target.style.backgroundColor = '#d4edda';
+            setTimeout(() => {
+                e.target.style.backgroundColor = 'white';
+            }, 500);
+
+            showCurrentModels();
+            
+            console.log('✅ WhatsApp Bot Modell gespeichert:', selectedModel);
+        });
+
+        // Funktion: Aktuelle Modelle anzeigen
+        function showCurrentModels() {
+            const websiteModel = localStorage.getItem('website_model') || 'Nicht gesetzt';
+            const whatsappModel = localStorage.getItem('whatsapp_model') || 'Nicht gesetzt';
+
+            document.getElementById('currentWebsite').innerHTML = 
+                `<strong>Website Bot:</strong> ${websiteModel}`;
+            document.getElementById('currentWhatsapp').innerHTML = 
+                `<strong>WhatsApp Bot:</strong> ${whatsappModel}`;
+
+            console.log('📊 Aktuelle Modellauswahl:');
+            console.log('   Website Bot:', websiteModel);
+            console.log('   WhatsApp Bot:', whatsappModel);
+        }
+
+        // Test: LocalStorage löschen (für Debugging)
+        window.clearModels = function() {
+            localStorage.removeItem('website_model');
+            localStorage.removeItem('whatsapp_model');
+            location.reload();
+        }
+
+        console.log('🤖 Mistral AI Modellauswahl Tester geladen!');
+        console.log('💡 Tipp: Öffne die Konsole (F12) für mehr Details');
+        console.log('🔧 Debug: Führe clearModels() aus, um gespeicherte Modelle zu löschen');
+    </script>
+</body>
+</html>

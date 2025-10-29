@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mistral AI Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .response {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            display: none;
+        }
+        
+        .response.show {
+            display: block;
+        }
+        
+        .response h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .response-content {
+            color: #555;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        
+        .error {
+            background: #fee;
+            border-left-color: #e53e3e;
+        }
+        
+        .success {
+            background: #efe;
+            border-left-color: #38a169;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #1565c0;
+        }
+        
+        .info-box a {
+            color: #1565c0;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Mistral AI Test</h1>
+        <p class="subtitle">Testen Sie die Mistral AI Integration</p>
+        
+        <div class="info-box">
+            ℹ️ Benötigen Sie einen API-Schlüssel? Besuchen Sie 
+            <a href="https://console.mistral.ai/" target="_blank">console.mistral.ai</a>
+        </div>
+        
+        <div class="input-group">
+            <label for="apiKey">Mistral AI API-Schlüssel</label>
+            <input type="password" id="apiKey" placeholder="Geben Sie Ihren API-Schlüssel ein...">
+        </div>
+        
+        <div class="input-group">
+            <label for="model">Modell</label>
+            <select id="model">
+                <option value="mistral-large-latest">Mistral Large (beste Qualität)</option>
+                <option value="mistral-medium-latest">Mistral Medium</option>
+                <option value="mistral-small-latest">Mistral Small (schnell)</option>
+                <option value="open-mistral-7b">Open Mistral 7B (kostenlos)</option>
+                <option value="open-mixtral-8x7b">Open Mixtral 8x7B</option>
+                <option value="open-mixtral-8x22b">Open Mixtral 8x22B</option>
+            </select>
+        </div>
+        
+        <div class="input-group">
+            <label for="message">Ihre Nachricht</label>
+            <textarea id="message" placeholder="Stellen Sie eine Frage...">Hallo! Kannst du mir erklären, was Mistral AI ist?</textarea>
+        </div>
+        
+        <button onclick="testMistralAPI()">📤 Nachricht senden</button>
+        <button onclick="validateAPI()" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+            ✓ API-Schlüssel validieren
+        </button>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #667eea;">Warte auf Antwort...</p>
+        </div>
+        
+        <div class="response" id="response">
+            <h3>Antwort:</h3>
+            <div class="response-content" id="responseContent"></div>
+        </div>
+    </div>
+    
+    <script>
+        // API-Key aus localStorage laden
+        window.addEventListener('load', () => {
+            const savedKey = localStorage.getItem('mistral_api_key');
+            if (savedKey) {
+                document.getElementById('apiKey').value = savedKey;
+            }
+        });
+        
+        async function validateAPI() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const responseDiv = document.getElementById('response');
+            const responseContent = document.getElementById('responseContent');
+            
+            if (!apiKey) {
+                showResponse('⚠️ Bitte geben Sie einen API-Schlüssel ein.', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch('https://api.mistral.ai/v1/models', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`
+                    }
+                });
+                
+                showLoading(false);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('mistral_api_key', apiKey);
+                    showResponse(
+                        `✅ API-Schlüssel ist gültig!\n\nVerfügbare Modelle: ${data.data ? data.data.length : 'unbekannt'}`, 
+                        'success'
+                    );
+                } else {
+                    const error = await response.json().catch(() => ({}));
+                    showResponse(
+                        `❌ API-Schlüssel ungültig!\n\nFehler: ${error.message || response.statusText}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showLoading(false);
+                showResponse(`❌ Verbindungsfehler: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testMistralAPI() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const model = document.getElementById('model').value;
+            const message = document.getElementById('message').value.trim();
+            
+            if (!apiKey) {
+                showResponse('⚠️ Bitte geben Sie einen API-Schlüssel ein.', 'error');
+                return;
+            }
+            
+            if (!message) {
+                showResponse('⚠️ Bitte geben Sie eine Nachricht ein.', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [
+                            {
+                                role: 'user',
+                                content: message
+                            }
+                        ],
+                        temperature: 0.7,
+                        max_tokens: 1000
+                    })
+                });
+                
+                showLoading(false);
+                
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    let errorMsg = `❌ API-Fehler (${response.status}): `;
+                    
+                    if (response.status === 401) {
+                        errorMsg += 'Ungültiger API-Schlüssel';
+                    } else if (response.status === 429) {
+                        errorMsg += 'Rate Limit erreicht. Bitte warten Sie.';
+                    } else {
+                        errorMsg += error.message || response.statusText;
+                    }
+                    
+                    showResponse(errorMsg, 'error');
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                if (data.choices && data.choices[0] && data.choices[0].message) {
+                    const reply = data.choices[0].message.content;
+                    localStorage.setItem('mistral_api_key', apiKey);
+                    showResponse(`✅ Erfolg!\n\n${reply}`, 'success');
+                } else {
+                    showResponse('❌ Ungültige Antwortstruktur', 'error');
+                }
+                
+            } catch (error) {
+                showLoading(false);
+                showResponse(`❌ Fehler: ${error.message}`, 'error');
+            }
+        }
+        
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            const response = document.getElementById('response');
+            
+            if (show) {
+                loading.classList.add('show');
+                response.classList.remove('show');
+            } else {
+                loading.classList.remove('show');
+            }
+        }
+        
+        function showResponse(content, type = 'success') {
+            const responseDiv = document.getElementById('response');
+            const responseContent = document.getElementById('responseContent');
+            
+            responseDiv.className = 'response show ' + type;
+            responseContent.textContent = content;
+        }
+    </script>
+</body>
+</html>

@@ -831,28 +831,65 @@ class AgentSystem {
         }
 
         try {
+            // Validiere und normalisiere Zeitstempel
+            let startDate, endDate;
+            
+            try {
+                startDate = new Date(timeMin);
+                endDate = new Date(timeMax);
+                
+                // Prüfe ob die Daten gültig sind
+                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                    throw new Error('Ungültige Zeitangaben');
+                }
+            } catch (e) {
+                console.error('❌ Fehler beim Parsen der Zeitangaben:', e);
+                return {
+                    success: false,
+                    message: '⚠️ Ungültige Zeitangaben. Bitte verwenden Sie ISO 8601 Format (z.B. 2025-10-30T00:00:00Z)'
+                };
+            }
+
             // REST API Aufruf mit Access Token
             const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events');
-            url.searchParams.append('timeMin', timeMin);
-            url.searchParams.append('timeMax', timeMax);
+            url.searchParams.append('timeMin', startDate.toISOString());
+            url.searchParams.append('timeMax', endDate.toISOString());
             url.searchParams.append('showDeleted', 'false');
             url.searchParams.append('singleEvents', 'true');
             url.searchParams.append('maxResults', '50');
             url.searchParams.append('orderBy', 'startTime');
 
+            console.log('📅 Rufe Calendar Events ab:', {
+                timeMin: startDate.toISOString(),
+                timeMax: endDate.toISOString()
+            });
+
             const response = await fetch(url, {
                 headers: {
-                    'Authorization': `Bearer ${config.accessToken}`
+                    'Authorization': `Bearer ${config.accessToken}`,
+                    'Accept': 'application/json'
                 }
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error.message || 'API Fehler');
+                const errorText = await response.text();
+                console.error('❌ Google Calendar API Fehler:', errorText);
+                
+                let errorMessage;
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMessage = errorJson.error?.message || errorText;
+                } catch (e) {
+                    errorMessage = errorText;
+                }
+                
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();
             const events = data.items || [];
+            
+            console.log(`✅ ${events.length} Termine gefunden`);
             
             return {
                 success: true,
@@ -866,7 +903,7 @@ class AgentSystem {
             console.error('❌ Fehler beim Abrufen der Calendar Events:', error);
             return {
                 success: false,
-                message: `⚠️ Fehler: ${error.result?.error?.message || error.message || 'Unbekannter Fehler beim Abrufen der Termine'}`
+                message: `⚠️ Fehler beim Abrufen der Termine: ${error.message || 'Unbekannter Fehler'}`
             };
         }
     }
@@ -920,17 +957,17 @@ class AgentSystem {
                 type: 'function',
                 function: {
                     name: 'list_calendar_events',
-                    description: 'Listet alle Termine in einem bestimmten Zeitraum auf',
+                    description: 'Listet alle Termine in einem bestimmten Zeitraum auf. WICHTIG: Beachte das heutige Datum aus dem System-Prompt!',
                     parameters: {
                         type: 'object',
                         properties: {
                             timeMin: {
                                 type: 'string',
-                                description: 'Start des Zeitraums (ISO 8601)'
+                                description: 'Start des Zeitraums im ISO 8601 Format (z.B. "2025-10-30T00:00:00Z" oder "2025-10-30T00:00:00"). WICHTIG: Verwende das korrekte Jahr aus dem System-Prompt!'
                             },
                             timeMax: {
                                 type: 'string',
-                                description: 'Ende des Zeitraums (ISO 8601)'
+                                description: 'Ende des Zeitraums im ISO 8601 Format (z.B. "2025-10-30T23:59:59Z" oder "2025-10-30T23:59:59"). WICHTIG: Verwende das korrekte Jahr aus dem System-Prompt!'
                             }
                         },
                         required: ['timeMin', 'timeMax']

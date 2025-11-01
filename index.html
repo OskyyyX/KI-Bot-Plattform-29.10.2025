@@ -154,6 +154,25 @@
                                                 <span class="slider"></span>
                                             </label>
                                         </div>
+                                        
+                                        <div id="websiteGoogleCalendarConfig" style="display: none; margin-top: 1rem;">
+                                            <div class="input-group" style="margin-bottom: 1rem;">
+                                                <label>Google Client ID</label>
+                                                <input type="text" id="websiteGoogleClientId" placeholder="Ihre Google OAuth 2.0 Client ID" style="font-family: monospace; font-size: 0.85rem;">
+                                            </div>
+                                            <div class="input-group" style="margin-bottom: 1rem;">
+                                                <label>Google Client Secret</label>
+                                                <input type="password" id="websiteGoogleClientSecret" placeholder="Ihr Google OAuth 2.0 Client Secret" style="font-family: monospace; font-size: 0.85rem;">
+                                            </div>
+                                            <div class="input-group" style="margin-bottom: 1rem;">
+                                                <label>Redirect URI (automatisch erkannt)</label>
+                                                <input type="text" id="websiteGoogleRedirectUri" readonly style="background-color: #f0f0f0; font-family: monospace; font-size: 0.85rem;">
+                                            </div>
+                                            <button class="btn primary" onclick="initializeGoogleAuth('website')" style="width: 100%;">
+                                                <i class="fab fa-google"></i> Mit Google verbinden
+                                            </button>
+                                            <div id="websiteGoogleStatus" style="margin-top: 0.75rem; font-size: 0.875rem;"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -319,6 +338,25 @@
                                                 <input type="checkbox" id="whatsappGoogleCalendarEnabled">
                                                 <span class="slider"></span>
                                             </label>
+                                        </div>
+                                        
+                                        <div id="whatsappGoogleCalendarConfig" style="display: none; margin-top: 1rem;">
+                                            <div class="input-group" style="margin-bottom: 1rem;">
+                                                <label>Google Client ID</label>
+                                                <input type="text" id="whatsappGoogleClientId" placeholder="Ihre Google OAuth 2.0 Client ID" style="font-family: monospace; font-size: 0.85rem;">
+                                            </div>
+                                            <div class="input-group" style="margin-bottom: 1rem;">
+                                                <label>Google Client Secret</label>
+                                                <input type="password" id="whatsappGoogleClientSecret" placeholder="Ihr Google OAuth 2.0 Client Secret" style="font-family: monospace; font-size: 0.85rem;">
+                                            </div>
+                                            <div class="input-group" style="margin-bottom: 1rem;">
+                                                <label>Redirect URI (automatisch erkannt)</label>
+                                                <input type="text" id="whatsappGoogleRedirectUri" readonly style="background-color: #f0f0f0; font-family: monospace; font-size: 0.85rem;">
+                                            </div>
+                                            <button class="btn primary" onclick="initializeGoogleAuth('whatsapp')" style="width: 100%;">
+                                                <i class="fab fa-google"></i> Mit Google verbinden
+                                            </button>
+                                            <div id="whatsappGoogleStatus" style="margin-top: 0.75rem; font-size: 0.875rem;"></div>
                                         </div>
                                     </div>
                                 </div>

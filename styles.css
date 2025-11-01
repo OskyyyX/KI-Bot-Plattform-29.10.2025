@@ -158,9 +158,9 @@ body {
 /* Bot Cards */
 .bot-list {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr 1fr;
     gap: 2rem;
-    max-width: 1800px;
+    width: 100%;
 }
 
 .bot-card {
@@ -171,6 +171,7 @@ body {
     box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.8);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 0;
 }
 
 .bot-card:hover {
@@ -1017,12 +1018,6 @@ input:checked + .slider:before {
 }
 
 /* Responsive Design */
-@media (max-width: 1200px) {
-    .bot-list {
-        grid-template-columns: 1fr;
-    }
-}
-
 @media (max-width: 768px) {
     .app-container {
         flex-direction: column;

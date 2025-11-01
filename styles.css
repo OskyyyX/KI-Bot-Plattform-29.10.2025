@@ -157,10 +157,10 @@ body {
 
 /* Bot Cards - FIXED GRID LAYOUT */
 .bot-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
-    gap: 2rem;
-    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 2rem !important;
+    width: 100% !important;
 }
 
 .bot-card {
@@ -709,7 +709,7 @@ input:checked + .slider:before {
 /* Responsive Design für Tablet und kleinere Bildschirme */
 @media (max-width: 1400px) {
     .bot-list {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
 }
 

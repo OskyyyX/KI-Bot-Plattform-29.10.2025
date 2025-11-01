@@ -1328,7 +1328,13 @@ class ChatManager {
                 let errorMessage = `API-Fehler (${response.status}): `;
                 
                 if (response.status === 401) {
-                    errorMessage += "Ungültiger API-Schlüssel. Bitte überprüfen Sie Ihren Mistral AI API-Key.";
+                    errorMessage += "Ungültiger API-Schlüssel.\n\n";
+                    errorMessage += "📋 So beheben Sie das Problem:\n";
+                    errorMessage += "1. Geben Sie Ihren Mistral AI API-Key oben ein\n";
+                    errorMessage += "2. Klicken Sie auf 'Validieren'\n";
+                    errorMessage += "3. Warten Sie auf die grüne Bestätigung\n";
+                    errorMessage += "4. Versuchen Sie es dann erneut\n\n";
+                    errorMessage += "💡 Sie benötigen einen API-Key von: https://console.mistral.ai/";
                 } else if (response.status === 429) {
                     errorMessage += "Rate Limit erreicht. Bitte warten Sie einen Moment.";
                 } else if (response.status === 400) {

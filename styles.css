@@ -157,10 +157,11 @@ body {
 
 /* Bot Cards */
 .bot-list {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    width: 100%;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    grid-auto-flow: column !important;
+    gap: 2rem !important;
+    width: 100% !important;
 }
 
 .bot-card {
@@ -171,7 +172,8 @@ body {
     box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.8);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    min-width: 0;
+    min-width: 0 !important;
+    overflow: hidden;
 }
 
 .bot-card:hover {

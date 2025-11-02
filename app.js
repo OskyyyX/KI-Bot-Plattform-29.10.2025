@@ -2018,8 +2018,8 @@ function renderConnectedApi(botType, apiType) {
     }
     
     apiHtml = `
-        <div class="connected-api-item" id="${botType}-${apiType}-connected">
-            <div class="connected-api-header">
+        <div class="connected-api-item compact" id="${botType}-${apiType}-connected">
+            <div class="connected-api-header" onclick="toggleApiConfig('${botType}', '${apiType}')">
                 <div class="connected-api-title">
                     <div class="connected-api-icon ${iconColor}">
                         <i class="${iconClass}"></i>
@@ -2029,11 +2029,10 @@ function renderConnectedApi(botType, apiType) {
                         <p>${apiDesc}</p>
                     </div>
                 </div>
-                <div class="connected-api-controls">
-                    <label class="switch">
-                        <input type="checkbox" id="${botType}${apiType.replace(/-/g, '')}Enabled">
-                        <span class="slider"></span>
-                    </label>
+                <div class="connected-api-controls" onclick="event.stopPropagation()">
+                    <button class="btn-icon" onclick="toggleApiConfig('${botType}', '${apiType}')" title="Einstellungen">
+                        <i class="fas fa-cog"></i>
+                    </button>
                     <button class="api-remove-btn" onclick="removeApi('${botType}', '${apiType}')" title="API entfernen">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -2047,8 +2046,8 @@ function renderConnectedApi(botType, apiType) {
     
     activeApisList.insertAdjacentHTML('beforeend', apiHtml);
     
-    // Re-initialize toggle listeners
-    initializeApiToggles(botType, apiType);
+    // Auto-load saved config
+    loadApiConfig(botType, apiType);
 }
 
 // Get API configuration HTML
@@ -2105,39 +2104,43 @@ function getApiConfigHtml(botType, apiType) {
     return '';
 }
 
+// Toggle API Configuration
+window.toggleApiConfig = function(botType, apiType) {
+    const configId = `${botType}${apiType.replace(/-/g, '')}Config`;
+    const configDiv = document.getElementById(configId);
+    const apiItem = document.getElementById(`${botType}-${apiType}-connected`);
+    
+    if (configDiv && apiItem) {
+        const isOpen = configDiv.style.display === 'block';
+        configDiv.style.display = isOpen ? 'none' : 'block';
+        
+        // Toggle compact class
+        if (isOpen) {
+            apiItem.classList.add('compact');
+        } else {
+            apiItem.classList.remove('compact');
+        }
+    }
+};
+
 // Initialize API toggles
 function initializeApiToggles(botType, apiType) {
-    const toggleId = `${botType}${apiType.replace(/-/g, '')}Enabled`;
-    const configId = `${botType}${apiType.replace(/-/g, '')}Config`;
+    // Initialize redirect URI automatically
+    const redirectUri = `${window.location.origin}${window.location.pathname}`;
     
-    const toggle = document.getElementById(toggleId);
-    const configDiv = document.getElementById(configId);
-    
-    if (toggle && configDiv) {
-        toggle.addEventListener('change', (e) => {
-            configDiv.style.display = e.target.checked ? 'block' : 'none';
-        });
-        
-        // Initialize redirect URI automatically
-        const redirectUri = `${window.location.origin}${window.location.pathname}`;
-        
-        if (apiType === 'google-calendar') {
-            const redirectUriInput = document.getElementById(`${botType}GoogleRedirectUri`);
-            if (redirectUriInput) {
-                redirectUriInput.value = redirectUri;
-            }
-            if (agentSystem) {
-                agentSystem.detectRedirectUri();
-            }
-        } else if (apiType === 'outlook-calendar') {
-            const redirectUriInput = document.getElementById(`${botType}OutlookRedirectUri`);
-            if (redirectUriInput) {
-                redirectUriInput.value = redirectUri;
-            }
+    if (apiType === 'google-calendar') {
+        const redirectUriInput = document.getElementById(`${botType}GoogleRedirectUri`);
+        if (redirectUriInput) {
+            redirectUriInput.value = redirectUri;
         }
-        
-        // Load saved configuration
-        loadApiConfig(botType, apiType);
+        if (agentSystem) {
+            agentSystem.detectRedirectUri();
+        }
+    } else if (apiType === 'outlook-calendar') {
+        const redirectUriInput = document.getElementById(`${botType}OutlookRedirectUri`);
+        if (redirectUriInput) {
+            redirectUriInput.value = redirectUri;
+        }
     }
 }
 
@@ -2166,17 +2169,15 @@ window.saveApiConfig = function(botType, apiType) {
         // Show success message
         const statusDiv = document.getElementById(`${botType}GoogleStatus`);
         if (statusDiv) {
-            statusDiv.innerHTML = '<span style="color: #10b981;"><i class="fas fa-check-circle"></i> Konfiguration gespeichert! Sie können nun verbinden.</span>';
+            statusDiv.innerHTML = '<span style="color: #10b981;"><i class="fas fa-check-circle"></i> ✅ Gespeichert! Konfiguration eingeklappt.</span>';
         }
         
-        // Close the config panel
+        alert('✅ Google Calendar Konfiguration gespeichert!');
+        
+        // Close the config panel automatically
         setTimeout(() => {
-            const toggle = document.getElementById(`${botType}googlecalendarEnabled`);
-            if (toggle && toggle.checked) {
-                toggle.checked = false;
-                toggle.dispatchEvent(new Event('change'));
-            }
-        }, 1500);
+            toggleApiConfig(botType, apiType);
+        }, 1000);
         
     } else if (apiType === 'outlook-calendar') {
         const clientId = document.getElementById(`${botType}OutlookClientId`)?.value || '';
@@ -2201,17 +2202,15 @@ window.saveApiConfig = function(botType, apiType) {
         // Show success message
         const statusDiv = document.getElementById(`${botType}OutlookStatus`);
         if (statusDiv) {
-            statusDiv.innerHTML = '<span style="color: #10b981;"><i class="fas fa-check-circle"></i> Konfiguration gespeichert!</span>';
+            statusDiv.innerHTML = '<span style="color: #10b981;"><i class="fas fa-check-circle"></i> ✅ Gespeichert! Konfiguration eingeklappt.</span>';
         }
         
-        // Close the config panel
+        alert('✅ Outlook Calendar Konfiguration gespeichert!');
+        
+        // Close the config panel automatically
         setTimeout(() => {
-            const toggle = document.getElementById(`${botType}outlookcalendarEnabled`);
-            if (toggle && toggle.checked) {
-                toggle.checked = false;
-                toggle.dispatchEvent(new Event('change'));
-            }
-        }, 1500);
+            toggleApiConfig(botType, apiType);
+        }, 1000);
     }
 };
 

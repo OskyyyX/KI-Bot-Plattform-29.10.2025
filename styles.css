@@ -1194,15 +1194,18 @@ input:checked + .slider:before {
     background: white;
     border: 2px solid rgba(59, 130, 246, 0.2);
     border-radius: 1rem;
-    padding: 1.25rem;
-    margin-bottom: 1rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.75rem;
     transition: all 0.3s ease;
+}
+
+.connected-api-item.compact {
+    padding: 0.75rem 1rem;
 }
 
 .connected-api-item:hover {
     box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
     border-color: rgba(59, 130, 246, 0.4);
-    transform: translateY(-2px);
 }
 
 .connected-api-header {
@@ -1210,54 +1213,77 @@ input:checked + .slider:before {
     align-items: center;
     justify-content: space-between;
     margin-bottom: 0;
+    cursor: pointer;
 }
 
 .connected-api-title {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
     flex: 1;
 }
 
 .connected-api-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    font-size: 1.1rem;
     color: white;
     flex-shrink: 0;
 }
 
 .connected-api-icon.google {
     background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
-    box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+    box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
 }
 
 .connected-api-icon.microsoft {
     background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
-    box-shadow: 0 4px 12px rgba(0, 120, 212, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 120, 212, 0.3);
 }
 
 .connected-api-title h4 {
     margin: 0;
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-color);
 }
 
 .connected-api-title p {
-    margin: 0.25rem 0 0 0;
-    font-size: 0.875rem;
+    margin: 0;
+    font-size: 0.8rem;
     color: var(--text-light);
+    display: none;
+}
+
+.connected-api-item:not(.compact) .connected-api-title p {
+    display: block;
+    margin-top: 0.25rem;
 }
 
 .connected-api-controls {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.5rem;
+}
+
+.btn-icon {
+    background: rgba(59, 130, 246, 0.1);
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+}
+
+.btn-icon:hover {
+    background: rgba(59, 130, 246, 0.2);
+    transform: scale(1.1);
 }
 
 .api-remove-btn {
@@ -1268,7 +1294,7 @@ input:checked + .slider:before {
     padding: 0.5rem;
     border-radius: 0.5rem;
     transition: all 0.2s ease;
-    font-size: 1.25rem;
+    font-size: 1rem;
 }
 
 .api-remove-btn:hover {

@@ -2216,6 +2216,15 @@ window.saveApiConfig = function(botType, apiType) {
         
         localStorage.setItem(`${botType}_google_config`, JSON.stringify(config));
         
+        // WICHTIG: Auch im alten AgentSystem Format speichern (für Kompatibilität)
+        if (window.agentSystem && window.agentSystem.agents[botType]) {
+            window.agentSystem.agents[botType].googleCalendar.clientId = clientId;
+            window.agentSystem.agents[botType].googleCalendar.clientSecret = clientSecret;
+            window.agentSystem.agents[botType].googleCalendar.redirectUri = redirectUri;
+            window.agentSystem.agents[botType].googleCalendar.enabled = true;
+            window.agentSystem.saveAgentConfig(botType, 'google');
+        }
+        
         // Show success message
         const statusDiv = document.getElementById(`${botType}GoogleStatus`);
         if (statusDiv) {
@@ -2337,12 +2346,29 @@ document.addEventListener('DOMContentLoaded', () => {
 // Load saved APIs on page load
 function loadSavedApis() {
     ['website', 'whatsapp'].forEach(botType => {
-        // Check for Google Calendar config - Zeige an wenn Credentials ODER accessToken vorhanden
-        const googleConfig = localStorage.getItem(`${botType}_google_config`);
-        if (googleConfig) {
+        // Check for Google Calendar config in AgentSystem (alter Speicherort)
+        const oldGoogleConfig = localStorage.getItem(`${botType}_agent_google`);
+        if (oldGoogleConfig) {
             try {
-                const config = JSON.parse(googleConfig);
-                // Zeige API wenn entweder credentials ODER accessToken existieren
+                const config = JSON.parse(oldGoogleConfig);
+                // Zeige API wenn credentials existieren
+                if (config.clientId || config.accessToken) {
+                    if (!connectedApis[botType].includes('google-calendar')) {
+                        connectedApis[botType].push('google-calendar');
+                        renderConnectedApi(botType, 'google-calendar');
+                    }
+                }
+            } catch (e) {
+                console.warn(`Failed to load Google Calendar config (agent) for ${botType}:`, e);
+            }
+        }
+        
+        // Check for Google Calendar config in new location
+        const newGoogleConfig = localStorage.getItem(`${botType}_google_config`);
+        if (newGoogleConfig) {
+            try {
+                const config = JSON.parse(newGoogleConfig);
+                // Zeige API wenn Credentials ODER accessToken vorhanden
                 if ((config.clientId && config.clientSecret) || config.accessToken) {
                     if (!connectedApis[botType].includes('google-calendar')) {
                         connectedApis[botType].push('google-calendar');
@@ -2354,7 +2380,7 @@ function loadSavedApis() {
             }
         }
         
-        // Check for Outlook Calendar config - Zeige an wenn Credentials ODER accessToken vorhanden
+        // Check for Outlook Calendar config
         const outlookConfig = localStorage.getItem(`${botType}_outlook_config`);
         if (outlookConfig) {
             try {
@@ -2378,3 +2404,199 @@ function loadSavedApis() {
     console.log('📋 Gespeicherte APIs geladen (konfiguriert oder verbunden):', connectedApis);
 }
 
+
+// ======================
+// 🤖 CHAT SYSTEM
+// ======================
+// 🤖 CHAT SYSTEM MIT AGENT INTEGRATION
+// ======================
+
+// Chat-Funktion mit AgentSystem Integration
+window.sendChatMessage = async function(botType) {
+    const messageInput = document.getElementById(`${botType}ChatInput`);
+    const messagesContainer = document.getElementById(`${botType}ChatMessages`);
+    
+    if (!messageInput || !messagesContainer) {
+        console.error('Chat elements not found');
+        return;
+    }
+    
+    const userMessage = messageInput.value.trim();
+    if (!userMessage) return;
+    
+    // Zeige User-Nachricht
+    const userMsgDiv = document.createElement('div');
+    userMsgDiv.className = 'chat-message user';
+    userMsgDiv.textContent = userMessage;
+    messagesContainer.appendChild(userMsgDiv);
+    
+    // Clear input
+    messageInput.value = '';
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    
+    // Zeige "Bot schreibt..." Indikator
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'chat-message bot typing';
+    typingDiv.innerHTML = '<i class="fas fa-circle"></i> <i class="fas fa-circle"></i> <i class="fas fa-circle"></i>';
+    messagesContainer.appendChild(typingDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    
+    try {
+        // Hole API Key
+        const apiKey = localStorage.getItem(`${botType}_mistral_api_key`) || localStorage.getItem('mistral_api_key');
+        if (!apiKey) {
+            throw new Error('Kein Mistral API Key konfiguriert. Bitte oben eingeben!');
+        }
+        
+        // Hole Bot-Persönlichkeit
+        const personality = localStorage.getItem(`${botType}_bot_personality`) || 
+            'Du bist ein hilfsbereiter deutscher Assistent mit Zugriff auf Google Calendar.';
+        
+        // Baue System-Prompt mit aktuellem Datum
+        const heute = new Date();
+        const datumString = heute.toLocaleDateString('de-DE', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
+        let systemPrompt = `📅 WICHTIG: Heute ist ${datumString}.\n\n${personality}`;
+        
+        // Hole AgentSystem Tools (Google Calendar Integration)
+        const availableTools = window.agentSystem.getAvailableTools(botType);
+        
+        if (availableTools.length > 0) {
+            systemPrompt += '\n\n🤖 AGENT-FÄHIGKEITEN:\n';
+            systemPrompt += 'Du kannst folgende Aktionen ausführen:\n';
+            availableTools.forEach(tool => {
+                systemPrompt += `- ${tool.function.name}: ${tool.function.description}\n`;
+            });
+            systemPrompt += '\nWenn der Benutzer nach Terminen fragt (z.B. "Habe ich morgen einen Termin?"), nutze SOFORT list_calendar_events!\n';
+            systemPrompt += 'Beachte das heutige Datum oben für relative Zeitangaben wie "morgen", "übermorgen", etc.';
+        }
+        
+        // Baue Mistral AI Request
+        const requestBody = {
+            model: 'mistral-large-latest',
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userMessage }
+            ],
+            temperature: 0.7,
+            max_tokens: 2000
+        };
+        
+        // Füge Tools hinzu falls vorhanden
+        if (availableTools.length > 0) {
+            requestBody.tools = availableTools;
+            requestBody.tool_choice = 'auto';
+        }
+        
+        // Rufe Mistral AI auf
+        const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify(requestBody)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `Mistral API Error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const assistantMessage = data.choices[0].message;
+        
+        // Entferne Typing Indicator
+        typingDiv.remove();
+        
+        // Prüfe ob Tool Calls vorhanden sind
+        if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+            console.log('🔧 Bot möchte Tools verwenden:', assistantMessage.tool_calls);
+            
+            // Führe alle Tool Calls aus
+            for (const toolCall of assistantMessage.tool_calls) {
+                const toolName = toolCall.function.name;
+                const toolArgs = JSON.parse(toolCall.function.arguments);
+                
+                console.log(`🔧 Führe ${toolName} aus mit:`, toolArgs);
+                
+                const toolResult = await window.agentSystem.executeTool(botType, toolName, toolArgs);
+                
+                if (toolResult.success && toolResult.events) {
+                    // Zeige Termine an
+                    let eventText = `📅 **Deine Termine:**\n\n`;
+                    
+                    if (toolResult.events.length === 0) {
+                        eventText = '✅ Du hast keine Termine im angefragten Zeitraum.';
+                    } else {
+                        toolResult.events.forEach((event, i) => {
+                            const start = new Date(event.start.dateTime || event.start.date);
+                            const end = new Date(event.end.dateTime || event.end.date);
+                            
+                            eventText += `${i + 1}. **${event.summary || 'Kein Titel'}**\n`;
+                            eventText += `   🕐 ${start.toLocaleString('de-DE')}\n`;
+                            if (event.location) eventText += `   📍 ${event.location}\n`;
+                            if (event.description) eventText += `   📝 ${event.description}\n`;
+                            eventText += '\n';
+                        });
+                    }
+                    
+                    const botMsgDiv = document.createElement('div');
+                    botMsgDiv.className = 'chat-message bot';
+                    botMsgDiv.style.whiteSpace = 'pre-wrap';
+                    botMsgDiv.textContent = eventText;
+                    messagesContainer.appendChild(botMsgDiv);
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    
+                } else if (!toolResult.success) {
+                    // Zeige Fehler
+                    const errorMsgDiv = document.createElement('div');
+                    errorMsgDiv.className = 'chat-message bot';
+                    errorMsgDiv.style.color = '#ef4444';
+                    errorMsgDiv.textContent = toolResult.message || 'Fehler beim Ausführen der Aktion';
+                    messagesContainer.appendChild(errorMsgDiv);
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+            }
+        } else {
+            // Normale Textantwort
+            const botResponse = assistantMessage.content || 'Keine Antwort erhalten.';
+            const botMsgDiv = document.createElement('div');
+            botMsgDiv.className = 'chat-message bot';
+            botMsgDiv.textContent = botResponse;
+            messagesContainer.appendChild(botMsgDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+    } catch (error) {
+        console.error('Chat error:', error);
+        typingDiv.remove();
+        
+        const errorMsgDiv = document.createElement('div');
+        errorMsgDiv.className = 'chat-message bot';
+        errorMsgDiv.style.color = '#ef4444';
+        errorMsgDiv.textContent = `⚠️ Fehler: ${error.message}`;
+        messagesContainer.appendChild(errorMsgDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+};
+
+// Enter-Taste Support für Chat
+document.addEventListener('DOMContentLoaded', () => {
+    ['website', 'whatsapp'].forEach(botType => {
+        const chatInput = document.getElementById(`${botType}ChatInput`);
+        if (chatInput) {
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    window.sendChatMessage(botType);
+                }
+            });
+        }
+    });
+});

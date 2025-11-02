@@ -205,10 +205,10 @@
                                 <div class="chat-config">
                                     <div class="chat-window">
                                         <div id="websiteFileContext" class="file-context-banner" style="display: none;"></div>
-                                        <div class="chat-messages" id="websiteBotChat"></div>
+                                        <div class="chat-messages" id="websiteChatMessages"></div>
                                         <div class="chat-input">
-                                            <textarea placeholder="Teste deinen Bot hier..." id="websiteBotPrompt"></textarea>
-                                            <button class="btn primary" onclick="sendBotInstruction('website')">
+                                            <textarea placeholder="Teste deinen Bot hier..." id="websiteChatInput"></textarea>
+                                            <button class="btn primary" onclick="sendChatMessage('website')">
                                                 <i class="fas fa-paper-plane"></i>
                                             </button>
                                         </div>
@@ -384,10 +384,10 @@
                                 <div class="chat-config">
                                     <div class="chat-window whatsapp-style">
                                         <div id="whatsappFileContext" class="file-context-banner" style="display: none;"></div>
-                                        <div class="chat-messages" id="whatsappBotChat"></div>
+                                        <div class="chat-messages" id="whatsappChatMessages"></div>
                                         <div class="chat-input">
-                                            <textarea placeholder="Teste deinen WhatsApp-Bot hier..." id="whatsappBotPrompt"></textarea>
-                                            <button class="btn primary" onclick="sendBotInstruction('whatsapp')">
+                                            <textarea placeholder="Teste deinen WhatsApp-Bot hier..." id="whatsappChatInput"></textarea>
+                                            <button class="btn primary" onclick="sendChatMessage('whatsapp')">
                                                 <i class="fas fa-paper-plane"></i>
                                             </button>
                                         </div>

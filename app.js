@@ -462,7 +462,14 @@ class AgentSystem {
             // Parse State um botType zu erhalten
             let botType;
             try {
-                const stateData = JSON.parse(decodeURIComponent(state));
+                // Versuche zuerst direktes Parsen (URLSearchParams hat bereits korrekt dekodiert)
+                let stateData;
+                try {
+                    stateData = JSON.parse(state);
+                } catch (innerErr) {
+                    // Fallback: decodeURIComponent falls es noch kodiert ist
+                    stateData = JSON.parse(decodeURIComponent(state));
+                }
                 botType = stateData.botType;
             } catch (e) {
                 console.error('❌ Fehler beim Parsen von State:', e);
@@ -658,7 +665,8 @@ class AgentSystem {
         authUrl.searchParams.append('scope', this.SCOPES);
         authUrl.searchParams.append('access_type', 'offline'); // Für Refresh Token
         authUrl.searchParams.append('prompt', 'consent'); // Zeige immer Consent Screen
-        authUrl.searchParams.append('state', encodeURIComponent(stateData)); // State mit botType
+        // Füge State unverändert hinzu; URLSearchParams kümmert sich um Encoding.
+        authUrl.searchParams.append('state', stateData); // State mit botType
 
         console.log('🚀 Redirect zu Google OAuth...');
 

@@ -1835,3 +1835,176 @@ setInterval(() => {
         costs: Math.random() * 10
     });
 }, 5000);
+
+// ============================================
+// API MANAGEMENT SYSTEM
+// ============================================
+
+let currentBotType = null;
+const addedApis = {
+    website: [],
+    whatsapp: []
+};
+
+// Open API Selection Modal
+window.openApiModal = function(botType) {
+    currentBotType = botType;
+    document.getElementById('apiSelectionModal').classList.add('active');
+};
+
+// Close API Selection Modal
+window.closeApiModal = function() {
+    document.getElementById('apiSelectionModal').classList.remove('active');
+    currentBotType = null;
+};
+
+// Add API to bot
+window.addApi = function(apiType) {
+    if (!currentBotType) return;
+    
+    // Check if API already added
+    if (addedApis[currentBotType].includes(apiType)) {
+        alert('Diese API wurde bereits hinzugefügt!');
+        return;
+    }
+    
+    // Add to list
+    addedApis[currentBotType].push(apiType);
+    
+    // Render API item
+    renderApiItem(currentBotType, apiType);
+    
+    // Close modal
+    closeApiModal();
+};
+
+// Remove API from bot
+window.removeApi = function(botType, apiType) {
+    if (!confirm('Möchten Sie diese API wirklich entfernen?')) return;
+    
+    // Remove from list
+    const index = addedApis[botType].indexOf(apiType);
+    if (index > -1) {
+        addedApis[botType].splice(index, 1);
+    }
+    
+    // Remove from DOM
+    const apiItem = document.getElementById(`${botType}-${apiType}-item`);
+    if (apiItem) {
+        apiItem.remove();
+    }
+    
+    // Clean up localStorage
+    if (apiType === 'google-calendar') {
+        localStorage.removeItem(`${botType}_agent_google`);
+        localStorage.removeItem(`${botType}_temp_client_id`);
+        localStorage.removeItem(`${botType}_temp_client_secret`);
+    } else if (apiType === 'outlook-calendar') {
+        localStorage.removeItem(`${botType}_agent_outlook`);
+        localStorage.removeItem(`${botType}_temp_outlook_client_id`);
+        localStorage.removeItem(`${botType}_temp_outlook_client_secret`);
+    }
+};
+
+// Render API Item in UI
+function renderApiItem(botType, apiType) {
+    const apiList = document.getElementById(`${botType}ApiList`);
+    if (!apiList) return;
+    
+    let apiHtml = '';
+    
+    if (apiType === 'google-calendar') {
+        apiHtml = `
+            <div class="added-api-item" id="${botType}-google-calendar-item">
+                <div class="added-api-header">
+                    <div class="added-api-title">
+                        <i class="fab fa-google" style="color: #4285f4;"></i>
+                        <h4>Google Calendar API</h4>
+                    </div>
+                    <div class="added-api-actions">
+                        <label class="switch">
+                            <input type="checkbox" id="${botType}GoogleCalendarEnabled">
+                            <span class="slider"></span>
+                        </label>
+                        <button class="remove-api-btn" onclick="removeApi('${botType}', 'google-calendar')" title="API entfernen">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="added-api-config" id="${botType}GoogleCalendarConfig" style="display: none;">
+                    <div class="input-group" style="margin-bottom: 1rem;">
+                        <label>Google Client ID</label>
+                        <input type="text" id="${botType}GoogleClientId" placeholder="Ihre Google OAuth 2.0 Client ID" style="font-family: monospace; font-size: 0.85rem;">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 1rem;">
+                        <label>Google Client Secret</label>
+                        <input type="password" id="${botType}GoogleClientSecret" placeholder="Ihr Google OAuth 2.0 Client Secret" style="font-family: monospace; font-size: 0.85rem;">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 1rem;">
+                        <label>Redirect URI (automatisch erkannt)</label>
+                        <input type="text" id="${botType}GoogleRedirectUri" readonly style="background-color: #f0f0f0; font-family: monospace; font-size: 0.85rem;">
+                    </div>
+                    <button class="btn primary" onclick="initializeGoogleAuth('${botType}')" style="width: 100%;">
+                        <i class="fab fa-google"></i> Mit Google verbinden
+                    </button>
+                    <div id="${botType}GoogleStatus" style="margin-top: 0.75rem; font-size: 0.875rem;"></div>
+                </div>
+            </div>
+        `;
+    } else if (apiType === 'outlook-calendar') {
+        apiHtml = `
+            <div class="added-api-item" id="${botType}-outlook-calendar-item">
+                <div class="added-api-header">
+                    <div class="added-api-title">
+                        <i class="fab fa-microsoft" style="color: #0078d4;"></i>
+                        <h4>Outlook Calendar API</h4>
+                    </div>
+                    <div class="added-api-actions">
+                        <label class="switch">
+                            <input type="checkbox" id="${botType}OutlookCalendarEnabled">
+                            <span class="slider"></span>
+                        </label>
+                        <button class="remove-api-btn" onclick="removeApi('${botType}', 'outlook-calendar')" title="API entfernen">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="added-api-config" id="${botType}OutlookCalendarConfig" style="display: none;">
+                    <div class="input-group" style="margin-bottom: 1rem;">
+                        <label>Microsoft Client ID (Application ID)</label>
+                        <input type="text" id="${botType}OutlookClientId" placeholder="Ihre Microsoft Azure Application ID" style="font-family: monospace; font-size: 0.85rem;">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 1rem;">
+                        <label>Microsoft Client Secret</label>
+                        <input type="password" id="${botType}OutlookClientSecret" placeholder="Ihr Microsoft Azure Client Secret" style="font-family: monospace; font-size: 0.85rem;">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 1rem;">
+                        <label>Redirect URI (automatisch erkannt)</label>
+                        <input type="text" id="${botType}OutlookRedirectUri" readonly style="background-color: #f0f0f0; font-family: monospace; font-size: 0.85rem;">
+                    </div>
+                    <button class="btn primary" onclick="initializeOutlookAuth('${botType}')" style="width: 100%;">
+                        <i class="fab fa-microsoft"></i> Mit Microsoft verbinden
+                    </button>
+                    <div id="${botType}OutlookStatus" style="margin-top: 0.75rem; font-size: 0.875rem;"></div>
+                </div>
+            </div>
+        `;
+    }
+    
+    apiList.insertAdjacentHTML('beforeend', apiHtml);
+    
+    // Re-initialize toggle listeners
+    if (agentSystem) {
+        agentSystem.initializeAgentToggles();
+    }
+}
+
+// Initialize Outlook OAuth (Placeholder for now)
+window.initializeOutlookAuth = function(botType) {
+    alert('Outlook Calendar Integration wird bald verfügbar sein!\n\nDiese Funktion wird in einem zukünftigen Update implementiert.');
+};
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('API Management System initialized');
+});

@@ -143,36 +143,13 @@
                                     </p>
                                 </div>
                                 <div class="agent-config">
-                                    <div class="agent-api-item">
-                                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                                            <div style="display: flex; align-items: center; gap: 10px;">
-                                                <i class="fab fa-google" style="font-size: 1.5rem; color: #4285f4;"></i>
-                                                <h4 style="margin: 0;">Google Calendar API</h4>
-                                            </div>
-                                            <label class="switch">
-                                                <input type="checkbox" id="websiteGoogleCalendarEnabled">
-                                                <span class="slider"></span>
-                                            </label>
-                                        </div>
-                                        
-                                        <div id="websiteGoogleCalendarConfig" style="display: none; margin-top: 1rem;">
-                                            <div class="input-group" style="margin-bottom: 1rem;">
-                                                <label>Google Client ID</label>
-                                                <input type="text" id="websiteGoogleClientId" placeholder="Ihre Google OAuth 2.0 Client ID" style="font-family: monospace; font-size: 0.85rem;">
-                                            </div>
-                                            <div class="input-group" style="margin-bottom: 1rem;">
-                                                <label>Google Client Secret</label>
-                                                <input type="password" id="websiteGoogleClientSecret" placeholder="Ihr Google OAuth 2.0 Client Secret" style="font-family: monospace; font-size: 0.85rem;">
-                                            </div>
-                                            <div class="input-group" style="margin-bottom: 1rem;">
-                                                <label>Redirect URI (automatisch erkannt)</label>
-                                                <input type="text" id="websiteGoogleRedirectUri" readonly style="background-color: #f0f0f0; font-family: monospace; font-size: 0.85rem;">
-                                            </div>
-                                            <button class="btn primary" onclick="initializeGoogleAuth('website')" style="width: 100%;">
-                                                <i class="fab fa-google"></i> Mit Google verbinden
-                                            </button>
-                                            <div id="websiteGoogleStatus" style="margin-top: 0.75rem; font-size: 0.875rem;"></div>
-                                        </div>
+                                    <!-- Container für hinzugefügte APIs -->
+                                    <div id="websiteApiList" class="api-list"></div>
+                                    
+                                    <!-- + API hinzufügen Button -->
+                                    <div class="add-api-box" onclick="openApiModal('website')">
+                                        <i class="fas fa-plus-circle"></i>
+                                        <span>API hinzufügen</span>
                                     </div>
                                 </div>
                             </div>
@@ -328,36 +305,13 @@
                                     </p>
                                 </div>
                                 <div class="agent-config">
-                                    <div class="agent-api-item">
-                                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                                            <div style="display: flex; align-items: center; gap: 10px;">
-                                                <i class="fab fa-google" style="font-size: 1.5rem; color: #4285f4;"></i>
-                                                <h4 style="margin: 0;">Google Calendar API</h4>
-                                            </div>
-                                            <label class="switch">
-                                                <input type="checkbox" id="whatsappGoogleCalendarEnabled">
-                                                <span class="slider"></span>
-                                            </label>
-                                        </div>
-                                        
-                                        <div id="whatsappGoogleCalendarConfig" style="display: none; margin-top: 1rem;">
-                                            <div class="input-group" style="margin-bottom: 1rem;">
-                                                <label>Google Client ID</label>
-                                                <input type="text" id="whatsappGoogleClientId" placeholder="Ihre Google OAuth 2.0 Client ID" style="font-family: monospace; font-size: 0.85rem;">
-                                            </div>
-                                            <div class="input-group" style="margin-bottom: 1rem;">
-                                                <label>Google Client Secret</label>
-                                                <input type="password" id="whatsappGoogleClientSecret" placeholder="Ihr Google OAuth 2.0 Client Secret" style="font-family: monospace; font-size: 0.85rem;">
-                                            </div>
-                                            <div class="input-group" style="margin-bottom: 1rem;">
-                                                <label>Redirect URI (automatisch erkannt)</label>
-                                                <input type="text" id="whatsappGoogleRedirectUri" readonly style="background-color: #f0f0f0; font-family: monospace; font-size: 0.85rem;">
-                                            </div>
-                                            <button class="btn primary" onclick="initializeGoogleAuth('whatsapp')" style="width: 100%;">
-                                                <i class="fab fa-google"></i> Mit Google verbinden
-                                            </button>
-                                            <div id="whatsappGoogleStatus" style="margin-top: 0.75rem; font-size: 0.875rem;"></div>
-                                        </div>
+                                    <!-- Container für hinzugefügte APIs -->
+                                    <div id="whatsappApiList" class="api-list"></div>
+                                    
+                                    <!-- + API hinzufügen Button -->
+                                    <div class="add-api-box" onclick="openApiModal('whatsapp')">
+                                        <i class="fas fa-plus-circle"></i>
+                                        <span>API hinzufügen</span>
                                     </div>
                                 </div>
                             </div>
@@ -466,6 +420,67 @@
                     <button type="submit" class="btn primary">Erstellen</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal für API-Auswahl -->
+    <div class="modal" id="apiSelectionModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0;">API hinzufügen</h2>
+                <button onclick="closeApiModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-light);">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="api-grid">
+                <!-- Google Calendar API Card -->
+                <div class="api-card" onclick="addApi('google-calendar')">
+                    <div class="api-card-icon" style="background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);">
+                        <i class="fab fa-google"></i>
+                    </div>
+                    <h3>Google Calendar</h3>
+                    <p>Termine erstellen, verwalten und abrufen</p>
+                    <div class="api-card-badge">
+                        <i class="fas fa-check-circle"></i> Verfügbar
+                    </div>
+                </div>
+
+                <!-- Outlook Calendar API Card -->
+                <div class="api-card" onclick="addApi('outlook-calendar')">
+                    <div class="api-card-icon" style="background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);">
+                        <i class="fab fa-microsoft"></i>
+                    </div>
+                    <h3>Outlook Calendar</h3>
+                    <p>Microsoft 365 Kalenderintegration</p>
+                    <div class="api-card-badge">
+                        <i class="fas fa-check-circle"></i> Verfügbar
+                    </div>
+                </div>
+
+                <!-- Weitere APIs (Platzhalter) -->
+                <div class="api-card disabled">
+                    <div class="api-card-icon" style="background: linear-gradient(135deg, #00a67e 0%, #008c6c 100%);">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <h3>SendGrid (E-Mail)</h3>
+                    <p>E-Mails versenden</p>
+                    <div class="api-card-badge" style="background-color: #94a3b8; color: white;">
+                        <i class="fas fa-clock"></i> Bald verfügbar
+                    </div>
+                </div>
+
+                <div class="api-card disabled">
+                    <div class="api-card-icon" style="background: linear-gradient(135deg, #1da1f2 0%, #0c85d0 100%);">
+                        <i class="fab fa-twitter"></i>
+                    </div>
+                    <h3>Twitter API</h3>
+                    <p>Tweets posten und lesen</p>
+                    <div class="api-card-badge" style="background-color: #94a3b8; color: white;">
+                        <i class="fas fa-clock"></i> Bald verfügbar
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

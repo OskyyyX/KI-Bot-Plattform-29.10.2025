@@ -1054,8 +1054,9 @@ class AgentSystem {
 
 // Mistral AI API Management
 class ChatManager {
-    constructor(mistralManager) {
+    constructor(mistralManager, agentSystem) {
         this.mistralManager = mistralManager;
+        this.agentSystem = agentSystem;
         this.conversations = {
             website: [],
             whatsapp: []
@@ -1318,7 +1319,7 @@ class ChatManager {
             systemPrompt += this.personalities[botType] || "Du bist ein hilfsbereiter Assistent.";
             
             // Füge Agent-Fähigkeiten zum System-Prompt hinzu
-            const availableTools = agentSystem.getAvailableTools(botType);
+            const availableTools = this.agentSystem.getAvailableTools(botType);
             if (availableTools.length > 0) {
                 systemPrompt += "\n\n🤖 **AGENT-FÄHIGKEITEN:**\n";
                 systemPrompt += "Du bist ein intelligenter Agent und kannst folgende Aktionen ausführen:\n";
@@ -1425,7 +1426,7 @@ class ChatManager {
                     this.addMessage(botType, `🤖 Führe Aktion aus: ${toolName}...`, false);
                     
                     try {
-                        const toolResult = await agentSystem.executeTool(botType, toolName, toolArgs);
+                        const toolResult = await this.agentSystem.executeTool(botType, toolName, toolArgs);
                         
                         // Zeige Erfolg
                         if (toolResult.success) {
@@ -1484,12 +1485,13 @@ class ChatManager {
 }
 
 class MistralManager {
-    constructor() {
+    constructor(agentSystem) {
         this.apiKey = null;
+        this.agentSystem = agentSystem;
         // Lade gespeicherte Modelle oder verwende Standardwerte
         this.websiteModel = localStorage.getItem('website_model') || 'mistral-large-latest';
         this.whatsappModel = localStorage.getItem('whatsapp_model') || 'mistral-large-latest';
-        this.chatManager = new ChatManager(this);
+        this.chatManager = new ChatManager(this, agentSystem);
         this.initializeListeners();
     }
 
@@ -1771,8 +1773,11 @@ const apiKeyManager = new APIKeyManager();
 const botConfigManager = new BotConfigManager();
 const fileManager = new FileManager();
 const agentSystem = new AgentSystem(); // WICHTIG: Agent System initialisieren
-const mistralManager = new MistralManager();
+const mistralManager = new MistralManager(agentSystem); // Pass agentSystem to MistralManager
 const analyticsManager = new AnalyticsManager();
+
+// Make agentSystem globally available
+window.agentSystem = agentSystem;
 
 // Global functions for inline onclick handlers
 window.sendBotInstruction = function(botType) {

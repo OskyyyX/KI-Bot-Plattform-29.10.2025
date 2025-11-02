@@ -539,6 +539,11 @@ class AgentSystem {
 
             // Speichere in localStorage
             this.saveAgentConfig(botType, 'google', { silent: true });
+            
+            // WICHTIG: API in connectedApis Liste hinzufügen (falls nicht schon vorhanden)
+            if (!connectedApis[botType].includes('google-calendar')) {
+                connectedApis[botType].push('google-calendar');
+            }
 
             // Bereinige URL (entferne code & state Parameter)
             const cleanUrl = window.location.origin + window.location.pathname;
@@ -551,6 +556,9 @@ class AgentSystem {
             }
 
             alert('✅ Google Calendar erfolgreich verbunden!\n\nDu kannst jetzt den Bot nach deinen Terminen fragen.');
+            
+            // Lade die Seite neu, damit die API-Liste aktualisiert wird
+            window.location.reload();
 
         } catch (error) {
             console.error('❌ Token Exchange Fehler:', error);
@@ -2276,8 +2284,50 @@ window.initializeOutlookAuth = function(botType) {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('✅ API Management System initialized');
     
+    // Load saved APIs from localStorage
+    loadSavedApis();
+    
     // Initialize counters
     updateApiCounter('website');
     updateApiCounter('whatsapp');
 });
+
+// Load saved APIs on page load
+function loadSavedApis() {
+    ['website', 'whatsapp'].forEach(botType => {
+        // Check for Google Calendar config
+        const googleConfig = localStorage.getItem(`${botType}_google_config`);
+        if (googleConfig) {
+            try {
+                const config = JSON.parse(googleConfig);
+                // Only add if clientId exists (means it was configured)
+                if (config.clientId && !connectedApis[botType].includes('google-calendar')) {
+                    connectedApis[botType].push('google-calendar');
+                    renderConnectedApi(botType, 'google-calendar');
+                }
+            } catch (e) {
+                console.warn(`Failed to load Google Calendar config for ${botType}:`, e);
+            }
+        }
+        
+        // Check for Outlook Calendar config
+        const outlookConfig = localStorage.getItem(`${botType}_outlook_config`);
+        if (outlookConfig) {
+            try {
+                const config = JSON.parse(outlookConfig);
+                if (config.clientId && !connectedApis[botType].includes('outlook-calendar')) {
+                    connectedApis[botType].push('outlook-calendar');
+                    renderConnectedApi(botType, 'outlook-calendar');
+                }
+            } catch (e) {
+                console.warn(`Failed to load Outlook Calendar config for ${botType}:`, e);
+            }
+        }
+        
+        // Update counter after loading
+        updateApiCounter(botType);
+    });
+    
+    console.log('📋 Gespeicherte APIs geladen:', connectedApis);
+}
 

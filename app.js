@@ -451,6 +451,14 @@ class AgentSystem {
         // Prüfe auf OAuth-Fehler
         if (error) {
             console.error('❌ OAuth Fehler:', error);
+            
+            // Bereinige OAuth-Pending Flag bei Fehler
+            ['website', 'whatsapp'].forEach(botType => {
+                localStorage.removeItem(`${botType}_oauth_pending`);
+                localStorage.removeItem(`${botType}_temp_client_id`);
+                localStorage.removeItem(`${botType}_temp_client_secret`);
+            });
+            
             alert(`Google Autorisierung fehlgeschlagen: ${error}`);
             window.history.replaceState({}, document.title, window.location.pathname);
             return;
@@ -540,10 +548,12 @@ class AgentSystem {
             // Speichere in localStorage
             this.saveAgentConfig(botType, 'google', { silent: true });
             
-            // WICHTIG: API in connectedApis Liste hinzufügen (falls nicht schon vorhanden)
-            if (!connectedApis[botType].includes('google-calendar')) {
-                connectedApis[botType].push('google-calendar');
-            }
+            // Bereinige OAuth-Pending Flag
+            localStorage.removeItem(`${botType}_oauth_pending`);
+            
+            // Bereinige temporäre Credentials
+            localStorage.removeItem(`${botType}_temp_client_id`);
+            localStorage.removeItem(`${botType}_temp_client_secret`);
 
             // Bereinige URL (entferne code & state Parameter)
             const cleanUrl = window.location.origin + window.location.pathname;
@@ -562,6 +572,12 @@ class AgentSystem {
 
         } catch (error) {
             console.error('❌ Token Exchange Fehler:', error);
+            
+            // Bereinige OAuth-Pending Flag im Fehlerfall
+            localStorage.removeItem(`${botType}_oauth_pending`);
+            localStorage.removeItem(`${botType}_temp_client_id`);
+            localStorage.removeItem(`${botType}_temp_client_secret`);
+            
             alert('❌ Fehler beim Token-Austausch:\n\n' + error.message);
         }
     }
@@ -669,11 +685,8 @@ class AgentSystem {
         this.agents[botType].googleCalendar.clientId = clientId;
         this.agents[botType].googleCalendar.clientSecret = clientSecret;
         
-        // WICHTIG: API zur Liste hinzufügen BEVOR zu Google weitergeleitet wird
-        // (damit sie nach dem Callback in der Liste erscheint)
-        if (!connectedApis[botType].includes('google-calendar')) {
-            connectedApis[botType].push('google-calendar');
-        }
+        // WICHTIG: Setze Flag dass OAuth läuft - wird nach erfolgreichem Login verwendet
+        localStorage.setItem(`${botType}_oauth_pending`, 'google-calendar');
         
         // Speichere temporär für OAuth Callback
         localStorage.setItem(`${botType}_temp_client_id`, clientId);

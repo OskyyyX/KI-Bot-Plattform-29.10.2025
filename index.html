@@ -461,126 +461,43 @@
     <div class="modal" id="apiSelectionModal">
         <div class="modal-content api-modal">
             <div class="modal-header">
-                <h2>
-                    <i class="fas fa-puzzle-piece"></i>
-                    API hinzufügen
-                </h2>
+                <h2>API hinzufügen</h2>
                 <button onclick="closeApiModal()" class="close-modal-btn">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             
-            <!-- API Categories -->
-            <div class="api-categories">
-                <!-- Kalender-Integration -->
-                <div class="api-category">
-                    <div class="category-header">
-                        <i class="fas fa-calendar-alt"></i>
-                        <h3>Kalender-Integration</h3>
+            <p style="color: var(--text-light); margin-bottom: 1.5rem; font-size: 0.875rem;">
+                Wählen Sie eine API aus, um Ihrem Bot neue Funktionen hinzuzufügen
+            </p>
+            
+            <!-- API Cards Grid - Minimalistisch -->
+            <div class="api-cards-grid">
+                <!-- Google Calendar -->
+                <div class="api-card-minimal" onclick="addApi('google-calendar')">
+                    <div class="api-card-icon google">
+                        <i class="fab fa-google"></i>
                     </div>
-                    <div class="category-apis">
-                        <div class="api-selection-card" onclick="addApi('google-calendar')">
-                            <div class="api-icon google">
-                                <i class="fab fa-google"></i>
-                            </div>
-                            <div class="api-info">
-                                <h4>Google Calendar</h4>
-                                <p>Termine erstellen und verwalten</p>
-                                <div class="api-features">
-                                    <span><i class="fas fa-check"></i> Termine buchen</span>
-                                    <span><i class="fas fa-check"></i> Verfügbarkeit prüfen</span>
-                                </div>
-                            </div>
-                            <div class="api-status-badge available">
-                                <i class="fas fa-check-circle"></i> Verfügbar
-                            </div>
-                        </div>
-                        
-                        <div class="api-selection-card" onclick="addApi('outlook-calendar')">
-                            <div class="api-icon microsoft">
-                                <i class="fab fa-microsoft"></i>
-                            </div>
-                            <div class="api-info">
-                                <h4>Outlook Calendar</h4>
-                                <p>Microsoft 365 Kalender</p>
-                                <div class="api-features">
-                                    <span><i class="fas fa-check"></i> Termine synchronisieren</span>
-                                    <span><i class="fas fa-check"></i> Outlook-Integration</span>
-                                </div>
-                            </div>
-                            <div class="api-status-badge available">
-                                <i class="fas fa-check-circle"></i> Verfügbar
-                            </div>
-                        </div>
+                    <div class="api-card-content">
+                        <h3>Google Calendar</h3>
+                        <p>Termine erstellen und verwalten</p>
+                    </div>
+                    <div class="api-card-action">
+                        <i class="fas fa-plus-circle"></i>
                     </div>
                 </div>
 
-                <!-- E-Mail & Kommunikation (Coming Soon) -->
-                <div class="api-category">
-                    <div class="category-header">
-                        <i class="fas fa-envelope"></i>
-                        <h3>E-Mail & Kommunikation</h3>
+                <!-- Outlook Calendar -->
+                <div class="api-card-minimal" onclick="addApi('outlook-calendar')">
+                    <div class="api-card-icon microsoft">
+                        <i class="fab fa-microsoft"></i>
                     </div>
-                    <div class="category-apis">
-                        <div class="api-selection-card disabled">
-                            <div class="api-icon sendgrid">
-                                <i class="fas fa-paper-plane"></i>
-                            </div>
-                            <div class="api-info">
-                                <h4>SendGrid</h4>
-                                <p>E-Mails versenden und verwalten</p>
-                                <div class="api-features">
-                                    <span><i class="fas fa-clock"></i> Automatische E-Mails</span>
-                                    <span><i class="fas fa-clock"></i> Templates</span>
-                                </div>
-                            </div>
-                            <div class="api-status-badge coming-soon">
-                                <i class="fas fa-clock"></i> Bald verfügbar
-                            </div>
-                        </div>
-                        
-                        <div class="api-selection-card disabled">
-                            <div class="api-icon gmail">
-                                <i class="fas fa-envelope"></i>
-                            </div>
-                            <div class="api-info">
-                                <h4>Gmail API</h4>
-                                <p>Gmail-Integration</p>
-                                <div class="api-features">
-                                    <span><i class="fas fa-clock"></i> E-Mails senden</span>
-                                    <span><i class="fas fa-clock"></i> Postfach verwalten</span>
-                                </div>
-                            </div>
-                            <div class="api-status-badge coming-soon">
-                                <i class="fas fa-clock"></i> Bald verfügbar
-                            </div>
-                        </div>
+                    <div class="api-card-content">
+                        <h3>Outlook Calendar</h3>
+                        <p>Microsoft 365 Kalender</p>
                     </div>
-                </div>
-
-                <!-- Social Media (Coming Soon) -->
-                <div class="api-category">
-                    <div class="category-header">
-                        <i class="fas fa-share-alt"></i>
-                        <h3>Social Media</h3>
-                    </div>
-                    <div class="category-apis">
-                        <div class="api-selection-card disabled">
-                            <div class="api-icon twitter">
-                                <i class="fab fa-twitter"></i>
-                            </div>
-                            <div class="api-info">
-                                <h4>Twitter / X</h4>
-                                <p>Tweets posten und verwalten</p>
-                                <div class="api-features">
-                                    <span><i class="fas fa-clock"></i> Tweets erstellen</span>
-                                    <span><i class="fas fa-clock"></i> Automatische Posts</span>
-                                </div>
-                            </div>
-                            <div class="api-status-badge coming-soon">
-                                <i class="fas fa-clock"></i> Bald verfügbar
-                            </div>
-                        </div>
+                    <div class="api-card-action">
+                        <i class="fas fa-plus-circle"></i>
                     </div>
                 </div>
             </div>

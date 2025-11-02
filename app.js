@@ -595,12 +595,9 @@ class AgentSystem {
                 toggle.checked = this.agents[botType].googleCalendar.enabled;
                 configDiv.style.display = toggle.checked ? 'block' : 'none';
                 
-                // Lade gespeicherte Werte
-                const clientIdInput = document.getElementById(`${botType}GoogleClientId`);
-                const apiKeyInput = document.getElementById(`${botType}GoogleApiKey`);
-                
-                if (clientIdInput) clientIdInput.value = this.agents[botType].googleCalendar.clientId || '';
-                if (apiKeyInput) apiKeyInput.value = this.agents[botType].googleCalendar.apiKey || '';
+                // NICHT die UI-Felder automatisch füllen
+                // Client ID und Client Secret sollen immer leer bleiben
+                // Der Benutzer muss sie bei jedem Mal selbst eingeben
                 
                 // Toggle Event
                 toggle.addEventListener('change', (e) => {

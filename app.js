@@ -2032,17 +2032,40 @@ function renderConnectedApi(botType, apiType) {
     let iconClass = '';
     let iconColor = '';
     
+    // Check connection status
+    let isConnected = false;
     if (apiType === 'google-calendar') {
         apiName = 'Google Calendar';
         apiDesc = 'Termine verwalten';
         iconClass = 'fab fa-google';
         iconColor = 'google';
+        
+        const config = localStorage.getItem(`${botType}_google_config`);
+        if (config) {
+            try {
+                const parsedConfig = JSON.parse(config);
+                isConnected = !!parsedConfig.accessToken;
+            } catch (e) {}
+        }
     } else if (apiType === 'outlook-calendar') {
         apiName = 'Outlook Calendar';
         apiDesc = 'Microsoft 365 Kalender';
         iconClass = 'fab fa-microsoft';
         iconColor = 'microsoft';
+        
+        const config = localStorage.getItem(`${botType}_outlook_config`);
+        if (config) {
+            try {
+                const parsedConfig = JSON.parse(config);
+                isConnected = !!parsedConfig.accessToken;
+            } catch (e) {}
+        }
     }
+    
+    // Status badge
+    const statusBadge = isConnected 
+        ? '<span class="api-status-badge connected">✓ Verbunden</span>' 
+        : '<span class="api-status-badge configured">⚙ Konfiguriert</span>';
     
     apiHtml = `
         <div class="connected-api-item compact" id="${botType}-${apiType}-connected">
@@ -2052,7 +2075,7 @@ function renderConnectedApi(botType, apiType) {
                         <i class="${iconClass}"></i>
                     </div>
                     <div>
-                        <h4>${apiName}</h4>
+                        <h4>${apiName} ${statusBadge}</h4>
                         <p>${apiDesc}</p>
                     </div>
                 </div>
@@ -2314,30 +2337,34 @@ document.addEventListener('DOMContentLoaded', () => {
 // Load saved APIs on page load
 function loadSavedApis() {
     ['website', 'whatsapp'].forEach(botType => {
-        // Check for Google Calendar config - NUR wenn accessToken vorhanden ist (bedeutet erfolgreich verbunden)
+        // Check for Google Calendar config - Zeige an wenn Credentials ODER accessToken vorhanden
         const googleConfig = localStorage.getItem(`${botType}_google_config`);
         if (googleConfig) {
             try {
                 const config = JSON.parse(googleConfig);
-                // Nur anzeigen wenn accessToken existiert (erfolgreiche OAuth-Verbindung)
-                if (config.accessToken && !connectedApis[botType].includes('google-calendar')) {
-                    connectedApis[botType].push('google-calendar');
-                    renderConnectedApi(botType, 'google-calendar');
+                // Zeige API wenn entweder credentials ODER accessToken existieren
+                if ((config.clientId && config.clientSecret) || config.accessToken) {
+                    if (!connectedApis[botType].includes('google-calendar')) {
+                        connectedApis[botType].push('google-calendar');
+                        renderConnectedApi(botType, 'google-calendar');
+                    }
                 }
             } catch (e) {
                 console.warn(`Failed to load Google Calendar config for ${botType}:`, e);
             }
         }
         
-        // Check for Outlook Calendar config - NUR wenn accessToken vorhanden ist
+        // Check for Outlook Calendar config - Zeige an wenn Credentials ODER accessToken vorhanden
         const outlookConfig = localStorage.getItem(`${botType}_outlook_config`);
         if (outlookConfig) {
             try {
                 const config = JSON.parse(outlookConfig);
-                // Nur anzeigen wenn accessToken existiert (erfolgreiche OAuth-Verbindung)
-                if (config.accessToken && !connectedApis[botType].includes('outlook-calendar')) {
-                    connectedApis[botType].push('outlook-calendar');
-                    renderConnectedApi(botType, 'outlook-calendar');
+                // Zeige API wenn entweder credentials ODER accessToken existieren
+                if ((config.clientId && config.clientSecret) || config.accessToken) {
+                    if (!connectedApis[botType].includes('outlook-calendar')) {
+                        connectedApis[botType].push('outlook-calendar');
+                        renderConnectedApi(botType, 'outlook-calendar');
+                    }
                 }
             } catch (e) {
                 console.warn(`Failed to load Outlook Calendar config for ${botType}:`, e);
@@ -2348,6 +2375,6 @@ function loadSavedApis() {
         updateApiCounter(botType);
     });
     
-    console.log('📋 Gespeicherte APIs geladen (nur verbundene):', connectedApis);
+    console.log('📋 Gespeicherte APIs geladen (konfiguriert oder verbunden):', connectedApis);
 }
 

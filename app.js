@@ -1859,21 +1859,52 @@ setInterval(() => {
 // ============================================
 
 let currentBotType = null;
+let currentDropdownButton = null;
 const connectedApis = {
     website: [],
     whatsapp: []
 };
 
-// Open API Selection Modal
+// Open API Selection Dropdown
 window.openApiModal = function(botType) {
     currentBotType = botType;
-    document.getElementById('apiSelectionModal').classList.add('active');
+    const dropdown = document.getElementById('apiSelectionDropdown');
+    const button = event.target.closest('.add-api-button');
+    
+    // Toggle dropdown
+    if (dropdown.classList.contains('active')) {
+        closeApiModal();
+    } else {
+        // Position dropdown below button
+        const buttonRect = button.getBoundingClientRect();
+        dropdown.style.position = 'fixed';
+        dropdown.style.top = (buttonRect.bottom + 5) + 'px';
+        dropdown.style.left = buttonRect.left + 'px';
+        dropdown.classList.add('active');
+        currentDropdownButton = button;
+        
+        // Close on outside click
+        setTimeout(() => {
+            document.addEventListener('click', handleOutsideClick);
+        }, 100);
+    }
 };
 
-// Close API Selection Modal
+// Handle click outside dropdown
+function handleOutsideClick(e) {
+    const dropdown = document.getElementById('apiSelectionDropdown');
+    if (!dropdown.contains(e.target) && !e.target.closest('.add-api-button')) {
+        closeApiModal();
+    }
+}
+
+// Close API Selection Dropdown
 window.closeApiModal = function() {
-    document.getElementById('apiSelectionModal').classList.remove('active');
+    const dropdown = document.getElementById('apiSelectionDropdown');
+    dropdown.classList.remove('active');
+    document.removeEventListener('click', handleOutsideClick);
     currentBotType = null;
+    currentDropdownButton = null;
 };
 
 // Add API to bot

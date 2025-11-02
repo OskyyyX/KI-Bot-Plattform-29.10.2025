@@ -1175,6 +1175,7 @@ input:checked + .slider:before {
     font-size: 1rem;
     font-weight: 600;
     color: var(--primary-color);
+    position: relative;
 }
 
 .add-api-button:hover {
@@ -1395,6 +1396,91 @@ input:checked + .slider:before {
 
 .api-card-minimal:hover .api-card-action {
     transform: scale(1.1);
+}
+
+/* API Selection Dropdown - Simple & Clean */
+.api-selection-dropdown {
+    display: none;
+    position: absolute;
+    background: white;
+    border: 2px solid rgba(59, 130, 246, 0.3);
+    border-radius: 1rem;
+    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2);
+    z-index: 1000;
+    min-width: 280px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+}
+
+.api-selection-dropdown.active {
+    display: block;
+    animation: dropdownSlide 0.2s ease;
+}
+
+@keyframes dropdownSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.api-option {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.api-option:last-child {
+    border-bottom: none;
+}
+
+.api-option:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+    padding-left: 1.5rem;
+}
+
+.api-option-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.api-option-icon.google {
+    background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+}
+
+.api-option-icon.microsoft {
+    background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+}
+
+.api-option-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.api-option-text strong {
+    font-size: 0.95rem;
+    color: var(--text-color);
+}
+
+.api-option-text span {
+    font-size: 0.8rem;
+    color: var(--text-light);
 }
 
 /* Old complex styles - remove */

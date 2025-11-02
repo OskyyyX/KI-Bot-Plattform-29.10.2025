@@ -457,49 +457,24 @@
         </div>
     </div>
 
-    <!-- Modal für API-Auswahl -->
-    <div class="modal" id="apiSelectionModal">
-        <div class="modal-content api-modal">
-            <div class="modal-header">
-                <h2>API hinzufügen</h2>
-                <button onclick="closeApiModal()" class="close-modal-btn">
-                    <i class="fas fa-times"></i>
-                </button>
+    <!-- API Selection Dropdown -->
+    <div class="api-selection-dropdown" id="apiSelectionDropdown">
+        <div class="api-option" onclick="addApi('google-calendar')">
+            <div class="api-option-icon google">
+                <i class="fab fa-google"></i>
             </div>
-            
-            <p style="color: var(--text-light); margin-bottom: 1.5rem; font-size: 0.875rem;">
-                Wählen Sie eine API aus, um Ihrem Bot neue Funktionen hinzuzufügen
-            </p>
-            
-            <!-- API Cards Grid - Minimalistisch -->
-            <div class="api-cards-grid">
-                <!-- Google Calendar -->
-                <div class="api-card-minimal" onclick="addApi('google-calendar')">
-                    <div class="api-card-icon google">
-                        <i class="fab fa-google"></i>
-                    </div>
-                    <div class="api-card-content">
-                        <h3>Google Calendar</h3>
-                        <p>Termine erstellen und verwalten</p>
-                    </div>
-                    <div class="api-card-action">
-                        <i class="fas fa-plus-circle"></i>
-                    </div>
-                </div>
-
-                <!-- Outlook Calendar -->
-                <div class="api-card-minimal" onclick="addApi('outlook-calendar')">
-                    <div class="api-card-icon microsoft">
-                        <i class="fab fa-microsoft"></i>
-                    </div>
-                    <div class="api-card-content">
-                        <h3>Outlook Calendar</h3>
-                        <p>Microsoft 365 Kalender</p>
-                    </div>
-                    <div class="api-card-action">
-                        <i class="fas fa-plus-circle"></i>
-                    </div>
-                </div>
+            <div class="api-option-text">
+                <strong>Google Calendar</strong>
+                <span>Termine verwalten</span>
+            </div>
+        </div>
+        <div class="api-option" onclick="addApi('outlook-calendar')">
+            <div class="api-option-icon microsoft">
+                <i class="fab fa-microsoft"></i>
+            </div>
+            <div class="api-option-text">
+                <strong>Outlook Calendar</strong>
+                <span>Microsoft 365 Kalender</span>
             </div>
         </div>
     </div>

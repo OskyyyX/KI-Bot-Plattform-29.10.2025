@@ -624,17 +624,35 @@ class AgentSystem {
     }
 
     async initializeGoogleAuth(botType) {
-        const clientId = document.getElementById(`${botType}GoogleClientId`)?.value?.trim();
-        const clientSecret = document.getElementById(`${botType}GoogleClientSecret`)?.value?.trim();
+        // Versuche zuerst gespeicherte Config zu laden
+        const savedConfig = localStorage.getItem(`${botType}_google_config`);
+        let clientId, clientSecret;
+        
+        if (savedConfig) {
+            try {
+                const config = JSON.parse(savedConfig);
+                clientId = config.clientId;
+                clientSecret = config.clientSecret;
+                console.log('✅ Verwende gespeicherte Google Calendar Konfiguration');
+            } catch (e) {
+                console.error('Fehler beim Laden gespeicherter Config:', e);
+            }
+        }
+        
+        // Falls nicht gespeichert, versuche aus Input-Feldern zu lesen
+        if (!clientId || !clientSecret) {
+            clientId = document.getElementById(`${botType}GoogleClientId`)?.value?.trim();
+            clientSecret = document.getElementById(`${botType}GoogleClientSecret`)?.value?.trim();
+        }
         
         // Validierung
         if (!clientId) {
-            alert('❌ Bitte Client-ID eingeben!');
+            alert('❌ Bitte Client-ID eingeben oder zuerst speichern!');
             return;
         }
 
         if (!clientSecret) {
-            alert('❌ Bitte Clientschlüssel (Client Secret) eingeben!');
+            alert('❌ Bitte Clientschlüssel (Client Secret) eingeben oder zuerst speichern!');
             return;
         }
 
@@ -2018,9 +2036,14 @@ function getApiConfigHtml(botType, apiType) {
                 <label>Redirect URI (automatisch erkannt)</label>
                 <input type="text" id="${botType}GoogleRedirectUri" readonly style="background-color: #f0f0f0; font-family: monospace; font-size: 0.85rem;">
             </div>
-            <button class="btn primary" onclick="initializeGoogleAuth('${botType}')" style="width: 100%;">
-                <i class="fab fa-google"></i> Mit Google verbinden
-            </button>
+            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                <button class="btn secondary" onclick="saveApiConfig('${botType}', '${apiType}')" style="flex: 1;">
+                    <i class="fas fa-save"></i> Speichern
+                </button>
+                <button class="btn primary" onclick="initializeGoogleAuth('${botType}')" style="flex: 1;">
+                    <i class="fab fa-google"></i> Verbinden
+                </button>
+            </div>
             <div id="${botType}GoogleStatus" style="margin-top: 0.75rem; font-size: 0.875rem;"></div>
         `;
     } else if (apiType === 'outlook-calendar') {
@@ -2037,9 +2060,14 @@ function getApiConfigHtml(botType, apiType) {
                 <label>Redirect URI (automatisch erkannt)</label>
                 <input type="text" id="${botType}OutlookRedirectUri" readonly style="background-color: #f0f0f0; font-family: monospace; font-size: 0.85rem;">
             </div>
-            <button class="btn primary" onclick="initializeOutlookAuth('${botType}')" style="width: 100%;">
-                <i class="fab fa-microsoft"></i> Mit Microsoft verbinden
-            </button>
+            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                <button class="btn secondary" onclick="saveApiConfig('${botType}', '${apiType}')" style="flex: 1;">
+                    <i class="fas fa-save"></i> Speichern
+                </button>
+                <button class="btn primary" onclick="initializeOutlookAuth('${botType}')" style="flex: 1;">
+                    <i class="fab fa-microsoft"></i> Verbinden
+                </button>
+            </div>
             <div id="${botType}OutlookStatus" style="margin-top: 0.75rem; font-size: 0.875rem;"></div>
         `;
     }
@@ -2059,9 +2087,152 @@ function initializeApiToggles(botType, apiType) {
             configDiv.style.display = e.target.checked ? 'block' : 'none';
         });
         
-        // Initialize redirect URI if applicable
-        if (apiType === 'google-calendar' && agentSystem) {
-            agentSystem.detectRedirectUri();
+        // Initialize redirect URI automatically
+        const redirectUri = `${window.location.origin}${window.location.pathname}`;
+        
+        if (apiType === 'google-calendar') {
+            const redirectUriInput = document.getElementById(`${botType}GoogleRedirectUri`);
+            if (redirectUriInput) {
+                redirectUriInput.value = redirectUri;
+            }
+            if (agentSystem) {
+                agentSystem.detectRedirectUri();
+            }
+        } else if (apiType === 'outlook-calendar') {
+            const redirectUriInput = document.getElementById(`${botType}OutlookRedirectUri`);
+            if (redirectUriInput) {
+                redirectUriInput.value = redirectUri;
+            }
+        }
+        
+        // Load saved configuration
+        loadApiConfig(botType, apiType);
+    }
+}
+
+// Save API Configuration
+window.saveApiConfig = function(botType, apiType) {
+    if (apiType === 'google-calendar') {
+        const clientId = document.getElementById(`${botType}GoogleClientId`)?.value || '';
+        const clientSecret = document.getElementById(`${botType}GoogleClientSecret`)?.value || '';
+        const redirectUri = document.getElementById(`${botType}GoogleRedirectUri`)?.value || '';
+        
+        if (!clientId.trim() || !clientSecret.trim()) {
+            alert('⚠️ Bitte füllen Sie Client ID und Client Secret aus!');
+            return;
+        }
+        
+        // Save to localStorage
+        const config = {
+            clientId: clientId,
+            clientSecret: clientSecret,
+            redirectUri: redirectUri,
+            savedAt: new Date().toISOString()
+        };
+        
+        localStorage.setItem(`${botType}_google_config`, JSON.stringify(config));
+        
+        // Show success message
+        const statusDiv = document.getElementById(`${botType}GoogleStatus`);
+        if (statusDiv) {
+            statusDiv.innerHTML = '<span style="color: #10b981;"><i class="fas fa-check-circle"></i> Konfiguration gespeichert! Sie können nun verbinden.</span>';
+        }
+        
+        // Close the config panel
+        setTimeout(() => {
+            const toggle = document.getElementById(`${botType}googlecalendarEnabled`);
+            if (toggle && toggle.checked) {
+                toggle.checked = false;
+                toggle.dispatchEvent(new Event('change'));
+            }
+        }, 1500);
+        
+    } else if (apiType === 'outlook-calendar') {
+        const clientId = document.getElementById(`${botType}OutlookClientId`)?.value || '';
+        const clientSecret = document.getElementById(`${botType}OutlookClientSecret`)?.value || '';
+        const redirectUri = document.getElementById(`${botType}OutlookRedirectUri`)?.value || '';
+        
+        if (!clientId.trim() || !clientSecret.trim()) {
+            alert('⚠️ Bitte füllen Sie Client ID und Client Secret aus!');
+            return;
+        }
+        
+        // Save to localStorage
+        const config = {
+            clientId: clientId,
+            clientSecret: clientSecret,
+            redirectUri: redirectUri,
+            savedAt: new Date().toISOString()
+        };
+        
+        localStorage.setItem(`${botType}_outlook_config`, JSON.stringify(config));
+        
+        // Show success message
+        const statusDiv = document.getElementById(`${botType}OutlookStatus`);
+        if (statusDiv) {
+            statusDiv.innerHTML = '<span style="color: #10b981;"><i class="fas fa-check-circle"></i> Konfiguration gespeichert!</span>';
+        }
+        
+        // Close the config panel
+        setTimeout(() => {
+            const toggle = document.getElementById(`${botType}outlookcalendarEnabled`);
+            if (toggle && toggle.checked) {
+                toggle.checked = false;
+                toggle.dispatchEvent(new Event('change'));
+            }
+        }, 1500);
+    }
+};
+
+// Load API Configuration
+function loadApiConfig(botType, apiType) {
+    if (apiType === 'google-calendar') {
+        const savedConfig = localStorage.getItem(`${botType}_google_config`);
+        if (savedConfig) {
+            try {
+                const config = JSON.parse(savedConfig);
+                
+                // Fill in the fields
+                const clientIdInput = document.getElementById(`${botType}GoogleClientId`);
+                const clientSecretInput = document.getElementById(`${botType}GoogleClientSecret`);
+                const redirectUriInput = document.getElementById(`${botType}GoogleRedirectUri`);
+                
+                if (clientIdInput) clientIdInput.value = config.clientId || '';
+                if (clientSecretInput) clientSecretInput.value = config.clientSecret || '';
+                if (redirectUriInput) redirectUriInput.value = config.redirectUri || '';
+                
+                // Show status
+                const statusDiv = document.getElementById(`${botType}GoogleStatus`);
+                if (statusDiv) {
+                    statusDiv.innerHTML = '<span style="color: #64748b;"><i class="fas fa-info-circle"></i> Gespeicherte Konfiguration geladen</span>';
+                }
+            } catch (e) {
+                console.error('Fehler beim Laden der Google Calendar Konfiguration:', e);
+            }
+        }
+    } else if (apiType === 'outlook-calendar') {
+        const savedConfig = localStorage.getItem(`${botType}_outlook_config`);
+        if (savedConfig) {
+            try {
+                const config = JSON.parse(savedConfig);
+                
+                // Fill in the fields
+                const clientIdInput = document.getElementById(`${botType}OutlookClientId`);
+                const clientSecretInput = document.getElementById(`${botType}OutlookClientSecret`);
+                const redirectUriInput = document.getElementById(`${botType}OutlookRedirectUri`);
+                
+                if (clientIdInput) clientIdInput.value = config.clientId || '';
+                if (clientSecretInput) clientSecretInput.value = config.clientSecret || '';
+                if (redirectUriInput) redirectUriInput.value = config.redirectUri || '';
+                
+                // Show status
+                const statusDiv = document.getElementById(`${botType}OutlookStatus`);
+                if (statusDiv) {
+                    statusDiv.innerHTML = '<span style="color: #64748b;"><i class="fas fa-info-circle"></i> Gespeicherte Konfiguration geladen</span>';
+                }
+            } catch (e) {
+                console.error('Fehler beim Laden der Outlook Calendar Konfiguration:', e);
+            }
         }
     }
 }

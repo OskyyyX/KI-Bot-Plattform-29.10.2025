@@ -574,9 +574,14 @@ class AgentSystem {
                         ...config
                     };
                     
-                    // NICHT die UI-Felder automatisch füllen
-                    // Client ID und Client Secret sollen immer leer sein
-                    // Der Benutzer muss sie selbst eingeben
+                    // NICHT die UI-Felder Client ID und Client Secret automatisch füllen
+                    // Diese sollen immer leer sein - Der Benutzer muss sie selbst eingeben
+                    
+                    // ABER: Redirect URI kann angezeigt werden (nicht sicherheitsrelevant)
+                    const redirectUriInput = document.getElementById(`${botType}GoogleRedirectUri`);
+                    if (redirectUriInput && config.redirectUri) {
+                        redirectUriInput.value = config.redirectUri;
+                    }
                     
                 } catch (e) {
                     console.error('Fehler beim Laden der Agent-Konfiguration:', e);
@@ -598,6 +603,15 @@ class AgentSystem {
                 // NICHT die UI-Felder automatisch füllen
                 // Client ID und Client Secret sollen immer leer bleiben
                 // Der Benutzer muss sie bei jedem Mal selbst eingeben
+                
+                // Aber: Event Listener für Redirect URI hinzufügen (wird gespeichert)
+                const redirectUriInput = document.getElementById(`${botType}GoogleRedirectUri`);
+                if (redirectUriInput) {
+                    redirectUriInput.addEventListener('input', (e) => {
+                        this.agents[botType].googleCalendar.redirectUri = e.target.value.trim();
+                        this.saveAgentConfig(botType, 'google');
+                    });
+                }
                 
                 // Toggle Event
                 toggle.addEventListener('change', (e) => {

@@ -574,15 +574,10 @@ class AgentSystem {
                         ...config
                     };
                     
-                    // Fülle UI-Felder
-                    if (config.clientId) {
-                        const clientIdInput = document.getElementById(`${botType}GoogleClientId`);
-                        if (clientIdInput) clientIdInput.value = config.clientId;
-                    }
-                    if (config.clientSecret) {
-                        const clientSecretInput = document.getElementById(`${botType}GoogleClientSecret`);
-                        if (clientSecretInput) clientSecretInput.value = config.clientSecret;
-                    }
+                    // NICHT die UI-Felder automatisch füllen
+                    // Client ID und Client Secret sollen immer leer sein
+                    // Der Benutzer muss sie selbst eingeben
+                    
                 } catch (e) {
                     console.error('Fehler beim Laden der Agent-Konfiguration:', e);
                 }

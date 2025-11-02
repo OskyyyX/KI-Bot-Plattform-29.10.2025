@@ -669,6 +669,12 @@ class AgentSystem {
         this.agents[botType].googleCalendar.clientId = clientId;
         this.agents[botType].googleCalendar.clientSecret = clientSecret;
         
+        // WICHTIG: API zur Liste hinzufügen BEVOR zu Google weitergeleitet wird
+        // (damit sie nach dem Callback in der Liste erscheint)
+        if (!connectedApis[botType].includes('google-calendar')) {
+            connectedApis[botType].push('google-calendar');
+        }
+        
         // Speichere temporär für OAuth Callback
         localStorage.setItem(`${botType}_temp_client_id`, clientId);
         localStorage.setItem(`${botType}_temp_client_secret`, btoa(clientSecret)); // Base64 verschlüsselt
@@ -2295,13 +2301,13 @@ document.addEventListener('DOMContentLoaded', () => {
 // Load saved APIs on page load
 function loadSavedApis() {
     ['website', 'whatsapp'].forEach(botType => {
-        // Check for Google Calendar config
+        // Check for Google Calendar config - NUR wenn accessToken vorhanden ist (bedeutet erfolgreich verbunden)
         const googleConfig = localStorage.getItem(`${botType}_google_config`);
         if (googleConfig) {
             try {
                 const config = JSON.parse(googleConfig);
-                // Only add if clientId exists (means it was configured)
-                if (config.clientId && !connectedApis[botType].includes('google-calendar')) {
+                // Nur anzeigen wenn accessToken existiert (erfolgreiche OAuth-Verbindung)
+                if (config.accessToken && !connectedApis[botType].includes('google-calendar')) {
                     connectedApis[botType].push('google-calendar');
                     renderConnectedApi(botType, 'google-calendar');
                 }
@@ -2310,12 +2316,13 @@ function loadSavedApis() {
             }
         }
         
-        // Check for Outlook Calendar config
+        // Check for Outlook Calendar config - NUR wenn accessToken vorhanden ist
         const outlookConfig = localStorage.getItem(`${botType}_outlook_config`);
         if (outlookConfig) {
             try {
                 const config = JSON.parse(outlookConfig);
-                if (config.clientId && !connectedApis[botType].includes('outlook-calendar')) {
+                // Nur anzeigen wenn accessToken existiert (erfolgreiche OAuth-Verbindung)
+                if (config.accessToken && !connectedApis[botType].includes('outlook-calendar')) {
                     connectedApis[botType].push('outlook-calendar');
                     renderConnectedApi(botType, 'outlook-calendar');
                 }
@@ -2328,6 +2335,6 @@ function loadSavedApis() {
         updateApiCounter(botType);
     });
     
-    console.log('📋 Gespeicherte APIs geladen:', connectedApis);
+    console.log('📋 Gespeicherte APIs geladen (nur verbundene):', connectedApis);
 }
 

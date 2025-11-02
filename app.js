@@ -1837,11 +1837,11 @@ setInterval(() => {
 }, 5000);
 
 // ============================================
-// API MANAGEMENT SYSTEM
+// API MANAGEMENT SYSTEM - REDESIGNED
 // ============================================
 
 let currentBotType = null;
-const addedApis = {
+const connectedApis = {
     website: [],
     whatsapp: []
 };
@@ -1863,16 +1863,19 @@ window.addApi = function(apiType) {
     if (!currentBotType) return;
     
     // Check if API already added
-    if (addedApis[currentBotType].includes(apiType)) {
-        alert('Diese API wurde bereits hinzugefügt!');
+    if (connectedApis[currentBotType].includes(apiType)) {
+        alert('✋ Diese API wurde bereits hinzugefügt!');
         return;
     }
     
     // Add to list
-    addedApis[currentBotType].push(apiType);
+    connectedApis[currentBotType].push(apiType);
     
     // Render API item
-    renderApiItem(currentBotType, apiType);
+    renderConnectedApi(currentBotType, apiType);
+    
+    // Update counter
+    updateApiCounter(currentBotType);
     
     // Close modal
     closeApiModal();
@@ -1880,19 +1883,22 @@ window.addApi = function(apiType) {
 
 // Remove API from bot
 window.removeApi = function(botType, apiType) {
-    if (!confirm('Möchten Sie diese API wirklich entfernen?')) return;
+    if (!confirm('⚠️ Möchten Sie diese API-Verbindung wirklich entfernen?\n\nAlle Konfigurationsdaten gehen verloren.')) return;
     
     // Remove from list
-    const index = addedApis[botType].indexOf(apiType);
+    const index = connectedApis[botType].indexOf(apiType);
     if (index > -1) {
-        addedApis[botType].splice(index, 1);
+        connectedApis[botType].splice(index, 1);
     }
     
     // Remove from DOM
-    const apiItem = document.getElementById(`${botType}-${apiType}-item`);
+    const apiItem = document.getElementById(`${botType}-${apiType}-connected`);
     if (apiItem) {
         apiItem.remove();
     }
+    
+    // Update counter
+    updateApiCounter(botType);
     
     // Clean up localStorage
     if (apiType === 'google-calendar') {
@@ -1906,105 +1912,171 @@ window.removeApi = function(botType, apiType) {
     }
 };
 
-// Render API Item in UI
-function renderApiItem(botType, apiType) {
-    const apiList = document.getElementById(`${botType}ApiList`);
-    if (!apiList) return;
+// Update API counter
+function updateApiCounter(botType) {
+    const count = connectedApis[botType].length;
+    const counterEl = document.getElementById(`${botType}ApiCount`);
+    const activeApisList = document.getElementById(`${botType}ActiveApis`);
     
-    let apiHtml = '';
-    
-    if (apiType === 'google-calendar') {
-        apiHtml = `
-            <div class="added-api-item" id="${botType}-google-calendar-item">
-                <div class="added-api-header">
-                    <div class="added-api-title">
-                        <i class="fab fa-google" style="color: #4285f4;"></i>
-                        <h4>Google Calendar API</h4>
-                    </div>
-                    <div class="added-api-actions">
-                        <label class="switch">
-                            <input type="checkbox" id="${botType}GoogleCalendarEnabled">
-                            <span class="slider"></span>
-                        </label>
-                        <button class="remove-api-btn" onclick="removeApi('${botType}', 'google-calendar')" title="API entfernen">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="added-api-config" id="${botType}GoogleCalendarConfig" style="display: none;">
-                    <div class="input-group" style="margin-bottom: 1rem;">
-                        <label>Google Client ID</label>
-                        <input type="text" id="${botType}GoogleClientId" placeholder="Ihre Google OAuth 2.0 Client ID" style="font-family: monospace; font-size: 0.85rem;">
-                    </div>
-                    <div class="input-group" style="margin-bottom: 1rem;">
-                        <label>Google Client Secret</label>
-                        <input type="password" id="${botType}GoogleClientSecret" placeholder="Ihr Google OAuth 2.0 Client Secret" style="font-family: monospace; font-size: 0.85rem;">
-                    </div>
-                    <div class="input-group" style="margin-bottom: 1rem;">
-                        <label>Redirect URI (automatisch erkannt)</label>
-                        <input type="text" id="${botType}GoogleRedirectUri" readonly style="background-color: #f0f0f0; font-family: monospace; font-size: 0.85rem;">
-                    </div>
-                    <button class="btn primary" onclick="initializeGoogleAuth('${botType}')" style="width: 100%;">
-                        <i class="fab fa-google"></i> Mit Google verbinden
-                    </button>
-                    <div id="${botType}GoogleStatus" style="margin-top: 0.75rem; font-size: 0.875rem;"></div>
-                </div>
-            </div>
-        `;
-    } else if (apiType === 'outlook-calendar') {
-        apiHtml = `
-            <div class="added-api-item" id="${botType}-outlook-calendar-item">
-                <div class="added-api-header">
-                    <div class="added-api-title">
-                        <i class="fab fa-microsoft" style="color: #0078d4;"></i>
-                        <h4>Outlook Calendar API</h4>
-                    </div>
-                    <div class="added-api-actions">
-                        <label class="switch">
-                            <input type="checkbox" id="${botType}OutlookCalendarEnabled">
-                            <span class="slider"></span>
-                        </label>
-                        <button class="remove-api-btn" onclick="removeApi('${botType}', 'outlook-calendar')" title="API entfernen">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="added-api-config" id="${botType}OutlookCalendarConfig" style="display: none;">
-                    <div class="input-group" style="margin-bottom: 1rem;">
-                        <label>Microsoft Client ID (Application ID)</label>
-                        <input type="text" id="${botType}OutlookClientId" placeholder="Ihre Microsoft Azure Application ID" style="font-family: monospace; font-size: 0.85rem;">
-                    </div>
-                    <div class="input-group" style="margin-bottom: 1rem;">
-                        <label>Microsoft Client Secret</label>
-                        <input type="password" id="${botType}OutlookClientSecret" placeholder="Ihr Microsoft Azure Client Secret" style="font-family: monospace; font-size: 0.85rem;">
-                    </div>
-                    <div class="input-group" style="margin-bottom: 1rem;">
-                        <label>Redirect URI (automatisch erkannt)</label>
-                        <input type="text" id="${botType}OutlookRedirectUri" readonly style="background-color: #f0f0f0; font-family: monospace; font-size: 0.85rem;">
-                    </div>
-                    <button class="btn primary" onclick="initializeOutlookAuth('${botType}')" style="width: 100%;">
-                        <i class="fab fa-microsoft"></i> Mit Microsoft verbinden
-                    </button>
-                    <div id="${botType}OutlookStatus" style="margin-top: 0.75rem; font-size: 0.875rem;"></div>
-                </div>
-            </div>
-        `;
+    if (counterEl) {
+        counterEl.textContent = `${count} ${count === 1 ? 'aktiv' : 'aktiv'}`;
     }
     
-    apiList.insertAdjacentHTML('beforeend', apiHtml);
-    
-    // Re-initialize toggle listeners
-    if (agentSystem) {
-        agentSystem.initializeAgentToggles();
+    // Show/hide empty state
+    if (activeApisList) {
+        const emptyState = activeApisList.querySelector('.empty-state');
+        if (count === 0 && !emptyState) {
+            activeApisList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>Keine APIs verbunden</p>
+                    <small>Klicken Sie auf "+ API hinzufügen", um zu starten</small>
+                </div>
+            `;
+        } else if (count > 0 && emptyState) {
+            emptyState.remove();
+        }
     }
 }
 
-// Initialize Outlook OAuth (Placeholder for now)
+// Render Connected API in UI
+function renderConnectedApi(botType, apiType) {
+    const activeApisList = document.getElementById(`${botType}ActiveApis`);
+    if (!activeApisList) return;
+    
+    // Remove empty state if exists
+    const emptyState = activeApisList.querySelector('.empty-state');
+    if (emptyState) {
+        emptyState.remove();
+    }
+    
+    let apiHtml = '';
+    let apiName = '';
+    let apiDesc = '';
+    let iconClass = '';
+    let iconColor = '';
+    
+    if (apiType === 'google-calendar') {
+        apiName = 'Google Calendar';
+        apiDesc = 'Termine verwalten';
+        iconClass = 'fab fa-google';
+        iconColor = 'google';
+    } else if (apiType === 'outlook-calendar') {
+        apiName = 'Outlook Calendar';
+        apiDesc = 'Microsoft 365 Kalender';
+        iconClass = 'fab fa-microsoft';
+        iconColor = 'microsoft';
+    }
+    
+    apiHtml = `
+        <div class="connected-api-item" id="${botType}-${apiType}-connected">
+            <div class="connected-api-header">
+                <div class="connected-api-title">
+                    <div class="connected-api-icon ${iconColor}">
+                        <i class="${iconClass}"></i>
+                    </div>
+                    <div>
+                        <h4>${apiName}</h4>
+                        <p>${apiDesc}</p>
+                    </div>
+                </div>
+                <div class="connected-api-controls">
+                    <label class="switch">
+                        <input type="checkbox" id="${botType}${apiType.replace(/-/g, '')}Enabled">
+                        <span class="slider"></span>
+                    </label>
+                    <button class="api-remove-btn" onclick="removeApi('${botType}', '${apiType}')" title="API entfernen">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="connected-api-config" id="${botType}${apiType.replace(/-/g, '')}Config" style="display: none;">
+                ${getApiConfigHtml(botType, apiType)}
+            </div>
+        </div>
+    `;
+    
+    activeApisList.insertAdjacentHTML('beforeend', apiHtml);
+    
+    // Re-initialize toggle listeners
+    initializeApiToggles(botType, apiType);
+}
+
+// Get API configuration HTML
+function getApiConfigHtml(botType, apiType) {
+    if (apiType === 'google-calendar') {
+        return `
+            <div class="input-group" style="margin-bottom: 1rem;">
+                <label>Google Client ID</label>
+                <input type="text" id="${botType}GoogleClientId" placeholder="Ihre Google OAuth 2.0 Client ID" style="font-family: monospace; font-size: 0.85rem;">
+            </div>
+            <div class="input-group" style="margin-bottom: 1rem;">
+                <label>Google Client Secret</label>
+                <input type="password" id="${botType}GoogleClientSecret" placeholder="Ihr Google OAuth 2.0 Client Secret" style="font-family: monospace; font-size: 0.85rem;">
+            </div>
+            <div class="input-group" style="margin-bottom: 1rem;">
+                <label>Redirect URI (automatisch erkannt)</label>
+                <input type="text" id="${botType}GoogleRedirectUri" readonly style="background-color: #f0f0f0; font-family: monospace; font-size: 0.85rem;">
+            </div>
+            <button class="btn primary" onclick="initializeGoogleAuth('${botType}')" style="width: 100%;">
+                <i class="fab fa-google"></i> Mit Google verbinden
+            </button>
+            <div id="${botType}GoogleStatus" style="margin-top: 0.75rem; font-size: 0.875rem;"></div>
+        `;
+    } else if (apiType === 'outlook-calendar') {
+        return `
+            <div class="input-group" style="margin-bottom: 1rem;">
+                <label>Microsoft Client ID</label>
+                <input type="text" id="${botType}OutlookClientId" placeholder="Ihre Microsoft Azure Application ID" style="font-family: monospace; font-size: 0.85rem;">
+            </div>
+            <div class="input-group" style="margin-bottom: 1rem;">
+                <label>Microsoft Client Secret</label>
+                <input type="password" id="${botType}OutlookClientSecret" placeholder="Ihr Microsoft Azure Client Secret" style="font-family: monospace; font-size: 0.85rem;">
+            </div>
+            <div class="input-group" style="margin-bottom: 1rem;">
+                <label>Redirect URI (automatisch erkannt)</label>
+                <input type="text" id="${botType}OutlookRedirectUri" readonly style="background-color: #f0f0f0; font-family: monospace; font-size: 0.85rem;">
+            </div>
+            <button class="btn primary" onclick="initializeOutlookAuth('${botType}')" style="width: 100%;">
+                <i class="fab fa-microsoft"></i> Mit Microsoft verbinden
+            </button>
+            <div id="${botType}OutlookStatus" style="margin-top: 0.75rem; font-size: 0.875rem;"></div>
+        `;
+    }
+    return '';
+}
+
+// Initialize API toggles
+function initializeApiToggles(botType, apiType) {
+    const toggleId = `${botType}${apiType.replace(/-/g, '')}Enabled`;
+    const configId = `${botType}${apiType.replace(/-/g, '')}Config`;
+    
+    const toggle = document.getElementById(toggleId);
+    const configDiv = document.getElementById(configId);
+    
+    if (toggle && configDiv) {
+        toggle.addEventListener('change', (e) => {
+            configDiv.style.display = e.target.checked ? 'block' : 'none';
+        });
+        
+        // Initialize redirect URI if applicable
+        if (apiType === 'google-calendar' && agentSystem) {
+            agentSystem.detectRedirectUri();
+        }
+    }
+}
+
+// Initialize Outlook OAuth (Placeholder)
 window.initializeOutlookAuth = function(botType) {
-    alert('Outlook Calendar Integration wird bald verfügbar sein!\n\nDiese Funktion wird in einem zukünftigen Update implementiert.');
+    alert('📅 Outlook Calendar Integration\n\nDiese Funktion wird in einem zukünftigen Update verfügbar sein!\n\n✅ Geplante Features:\n• Microsoft 365 Kalender-Synchronisation\n• Termin-Erstellung\n• Verfügbarkeits-Prüfung');
 };
 
-// Initialize when page loads
+// Initialize API Management System
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('API Management System initialized');
+    console.log('✅ API Management System initialized');
+    
+    // Initialize counters
+    updateApiCounter('website');
+    updateApiCounter('whatsapp');
 });
+

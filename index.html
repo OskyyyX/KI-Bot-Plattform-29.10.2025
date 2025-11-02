@@ -142,15 +142,32 @@
                                         🚀 <strong>NEU:</strong> Der Bot kann als intelligenter Agent handeln und Aktionen ausführen (z.B. Termine buchen, E-Mails senden).
                                     </p>
                                 </div>
-                                <div class="agent-config">
-                                    <!-- Container für hinzugefügte APIs -->
-                                    <div id="websiteApiList" class="api-list"></div>
-                                    
-                                    <!-- + API hinzufügen Button -->
-                                    <div class="add-api-box" onclick="openApiModal('website')">
-                                        <i class="fas fa-plus-circle"></i>
-                                        <span>API hinzufügen</span>
+                                
+                                <!-- API Management Container -->
+                                <div class="api-management">
+                                    <!-- Aktive APIs -->
+                                    <div class="active-apis-section">
+                                        <div class="section-header">
+                                            <h4>
+                                                <i class="fas fa-plug"></i>
+                                                Verbundene APIs
+                                            </h4>
+                                            <span class="api-count" id="websiteApiCount">0 aktiv</span>
+                                        </div>
+                                        <div id="websiteActiveApis" class="active-apis-list">
+                                            <div class="empty-state">
+                                                <i class="fas fa-inbox"></i>
+                                                <p>Keine APIs verbunden</p>
+                                                <small>Klicken Sie auf "+ API hinzufügen", um zu starten</small>
+                                            </div>
+                                        </div>
                                     </div>
+                                    
+                                    <!-- Add API Button -->
+                                    <button class="add-api-button" onclick="openApiModal('website')">
+                                        <i class="fas fa-plus"></i>
+                                        <span>API hinzufügen</span>
+                                    </button>
                                 </div>
                             </div>
 
@@ -304,15 +321,32 @@
                                         🚀 <strong>NEU:</strong> Der WhatsApp-Bot kann als intelligenter Agent handeln und Aktionen ausführen.
                                     </p>
                                 </div>
-                                <div class="agent-config">
-                                    <!-- Container für hinzugefügte APIs -->
-                                    <div id="whatsappApiList" class="api-list"></div>
-                                    
-                                    <!-- + API hinzufügen Button -->
-                                    <div class="add-api-box" onclick="openApiModal('whatsapp')">
-                                        <i class="fas fa-plus-circle"></i>
-                                        <span>API hinzufügen</span>
+                                
+                                <!-- API Management Container -->
+                                <div class="api-management">
+                                    <!-- Aktive APIs -->
+                                    <div class="active-apis-section">
+                                        <div class="section-header">
+                                            <h4>
+                                                <i class="fas fa-plug"></i>
+                                                Verbundene APIs
+                                            </h4>
+                                            <span class="api-count" id="whatsappApiCount">0 aktiv</span>
+                                        </div>
+                                        <div id="whatsappActiveApis" class="active-apis-list">
+                                            <div class="empty-state">
+                                                <i class="fas fa-inbox"></i>
+                                                <p>Keine APIs verbunden</p>
+                                                <small>Klicken Sie auf "+ API hinzufügen", um zu starten</small>
+                                            </div>
+                                        </div>
                                     </div>
+                                    
+                                    <!-- Add API Button -->
+                                    <button class="add-api-button" onclick="openApiModal('whatsapp')">
+                                        <i class="fas fa-plus"></i>
+                                        <span>API hinzufügen</span>
+                                    </button>
                                 </div>
                             </div>
 
@@ -425,59 +459,128 @@
 
     <!-- Modal für API-Auswahl -->
     <div class="modal" id="apiSelectionModal">
-        <div class="modal-content" style="max-width: 700px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h2 style="margin: 0;">API hinzufügen</h2>
-                <button onclick="closeApiModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-light);">
+        <div class="modal-content api-modal">
+            <div class="modal-header">
+                <h2>
+                    <i class="fas fa-puzzle-piece"></i>
+                    API hinzufügen
+                </h2>
+                <button onclick="closeApiModal()" class="close-modal-btn">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             
-            <div class="api-grid">
-                <!-- Google Calendar API Card -->
-                <div class="api-card" onclick="addApi('google-calendar')">
-                    <div class="api-card-icon" style="background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);">
-                        <i class="fab fa-google"></i>
+            <!-- API Categories -->
+            <div class="api-categories">
+                <!-- Kalender-Integration -->
+                <div class="api-category">
+                    <div class="category-header">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h3>Kalender-Integration</h3>
                     </div>
-                    <h3>Google Calendar</h3>
-                    <p>Termine erstellen, verwalten und abrufen</p>
-                    <div class="api-card-badge">
-                        <i class="fas fa-check-circle"></i> Verfügbar
+                    <div class="category-apis">
+                        <div class="api-selection-card" onclick="addApi('google-calendar')">
+                            <div class="api-icon google">
+                                <i class="fab fa-google"></i>
+                            </div>
+                            <div class="api-info">
+                                <h4>Google Calendar</h4>
+                                <p>Termine erstellen und verwalten</p>
+                                <div class="api-features">
+                                    <span><i class="fas fa-check"></i> Termine buchen</span>
+                                    <span><i class="fas fa-check"></i> Verfügbarkeit prüfen</span>
+                                </div>
+                            </div>
+                            <div class="api-status-badge available">
+                                <i class="fas fa-check-circle"></i> Verfügbar
+                            </div>
+                        </div>
+                        
+                        <div class="api-selection-card" onclick="addApi('outlook-calendar')">
+                            <div class="api-icon microsoft">
+                                <i class="fab fa-microsoft"></i>
+                            </div>
+                            <div class="api-info">
+                                <h4>Outlook Calendar</h4>
+                                <p>Microsoft 365 Kalender</p>
+                                <div class="api-features">
+                                    <span><i class="fas fa-check"></i> Termine synchronisieren</span>
+                                    <span><i class="fas fa-check"></i> Outlook-Integration</span>
+                                </div>
+                            </div>
+                            <div class="api-status-badge available">
+                                <i class="fas fa-check-circle"></i> Verfügbar
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Outlook Calendar API Card -->
-                <div class="api-card" onclick="addApi('outlook-calendar')">
-                    <div class="api-card-icon" style="background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);">
-                        <i class="fab fa-microsoft"></i>
-                    </div>
-                    <h3>Outlook Calendar</h3>
-                    <p>Microsoft 365 Kalenderintegration</p>
-                    <div class="api-card-badge">
-                        <i class="fas fa-check-circle"></i> Verfügbar
-                    </div>
-                </div>
-
-                <!-- Weitere APIs (Platzhalter) -->
-                <div class="api-card disabled">
-                    <div class="api-card-icon" style="background: linear-gradient(135deg, #00a67e 0%, #008c6c 100%);">
+                <!-- E-Mail & Kommunikation (Coming Soon) -->
+                <div class="api-category">
+                    <div class="category-header">
                         <i class="fas fa-envelope"></i>
+                        <h3>E-Mail & Kommunikation</h3>
                     </div>
-                    <h3>SendGrid (E-Mail)</h3>
-                    <p>E-Mails versenden</p>
-                    <div class="api-card-badge" style="background-color: #94a3b8; color: white;">
-                        <i class="fas fa-clock"></i> Bald verfügbar
+                    <div class="category-apis">
+                        <div class="api-selection-card disabled">
+                            <div class="api-icon sendgrid">
+                                <i class="fas fa-paper-plane"></i>
+                            </div>
+                            <div class="api-info">
+                                <h4>SendGrid</h4>
+                                <p>E-Mails versenden und verwalten</p>
+                                <div class="api-features">
+                                    <span><i class="fas fa-clock"></i> Automatische E-Mails</span>
+                                    <span><i class="fas fa-clock"></i> Templates</span>
+                                </div>
+                            </div>
+                            <div class="api-status-badge coming-soon">
+                                <i class="fas fa-clock"></i> Bald verfügbar
+                            </div>
+                        </div>
+                        
+                        <div class="api-selection-card disabled">
+                            <div class="api-icon gmail">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="api-info">
+                                <h4>Gmail API</h4>
+                                <p>Gmail-Integration</p>
+                                <div class="api-features">
+                                    <span><i class="fas fa-clock"></i> E-Mails senden</span>
+                                    <span><i class="fas fa-clock"></i> Postfach verwalten</span>
+                                </div>
+                            </div>
+                            <div class="api-status-badge coming-soon">
+                                <i class="fas fa-clock"></i> Bald verfügbar
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="api-card disabled">
-                    <div class="api-card-icon" style="background: linear-gradient(135deg, #1da1f2 0%, #0c85d0 100%);">
-                        <i class="fab fa-twitter"></i>
+                <!-- Social Media (Coming Soon) -->
+                <div class="api-category">
+                    <div class="category-header">
+                        <i class="fas fa-share-alt"></i>
+                        <h3>Social Media</h3>
                     </div>
-                    <h3>Twitter API</h3>
-                    <p>Tweets posten und lesen</p>
-                    <div class="api-card-badge" style="background-color: #94a3b8; color: white;">
-                        <i class="fas fa-clock"></i> Bald verfügbar
+                    <div class="category-apis">
+                        <div class="api-selection-card disabled">
+                            <div class="api-icon twitter">
+                                <i class="fab fa-twitter"></i>
+                            </div>
+                            <div class="api-info">
+                                <h4>Twitter / X</h4>
+                                <p>Tweets posten und verwalten</p>
+                                <div class="api-features">
+                                    <span><i class="fas fa-clock"></i> Tweets erstellen</span>
+                                    <span><i class="fas fa-clock"></i> Automatische Posts</span>
+                                </div>
+                            </div>
+                            <div class="api-status-badge coming-soon">
+                                <i class="fas fa-clock"></i> Bald verfügbar
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

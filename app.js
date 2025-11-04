@@ -1052,212 +1052,10 @@ class AgentSystem {
     }
 }
 
-// Google Gemini AI API Management
-class GeminiManager {
-    constructor(agentSystem) {
-        this.agentSystem = agentSystem;
-        this.apiKey = null;
-        this.websiteModel = localStorage.getItem('website_gemini_model') || 'gemini-1.5-flash';
-        this.whatsappModel = localStorage.getItem('whatsapp_gemini_model') || 'gemini-1.5-flash';
-    }
-
-    async callGemini(botType, userMessage, uploadedFiles = []) {
-        const apiKey = localStorage.getItem(`${botType}_gemini_api_key`) || localStorage.getItem('gemini_api_key');
-        
-        if (!apiKey) {
-            throw new Error('❌ Kein Gemini API Key konfiguriert! Bitte API-Schlüssel eingeben.');
-        }
-
-        const model = this[`${botType}Model`];
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-        // System Prompt erstellen
-        const systemPrompt = this.buildSystemPrompt(botType, uploadedFiles);
-        
-        // Gemini API Request
-        const requestBody = {
-            contents: [{
-                parts: [
-                    { text: systemPrompt },
-                    { text: userMessage }
-                ]
-            }],
-            generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 2000
-            }
-        };
-
-        console.log('🔷 Gemini Request:', model);
-
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error?.message || `Gemini API Error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-            throw new Error('Ungültige Gemini API Antwort');
-        }
-
-        const responseText = data.candidates[0].content.parts[0].text;
-        
-        // Prüfe ob Calendar-Anfrage
-        if (responseText.includes('CALENDAR_REQUEST:')) {
-            return await this.handleCalendarRequest(botType, responseText, userMessage);
-        }
-
-        return responseText;
-    }
-
-    buildSystemPrompt(botType, uploadedFiles) {
-        const heute = new Date();
-        const datumString = heute.toLocaleDateString('de-DE', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-
-        let prompt = `📅 WICHTIG: Heute ist ${datumString}. Beachte dieses Datum bei allen zeitlichen Anfragen!\n\n`;
-        
-        // Bot Persönlichkeit
-        const personality = localStorage.getItem(`${botType}_bot_personality`) || 
-            'Du bist ein freundlicher und hilfsbereiter deutscher Assistent. Antworte immer auf Deutsch.';
-        prompt += personality + '\n\n';
-
-        // Agent-Fähigkeiten (Calendar)
-        const googleCalendarEnabled = this.agentSystem.agents[botType].googleCalendar.enabled;
-        
-        if (googleCalendarEnabled) {
-            prompt += '🤖 **AGENT-FÄHIGKEITEN - Google Calendar:**\n';
-            prompt += 'Du hast Zugriff auf den Google Kalender des Benutzers!\n\n';
-            prompt += 'Wenn der Benutzer nach Terminen fragt, antworte EXAKT so:\n';
-            prompt += 'CALENDAR_REQUEST: [Zeitraum]\n\n';
-            prompt += 'Beispiele:\n';
-            prompt += '- "Welche Termine habe ich morgen?" → CALENDAR_REQUEST: morgen\n';
-            prompt += '- "Was steht nächste Woche an?" → CALENDAR_REQUEST: nächste Woche\n';
-            prompt += '- "Zeig mir meine Termine heute" → CALENDAR_REQUEST: heute\n\n';
-        }
-
-        // Hochgeladene Dateien (Wissensbasis)
-        if (uploadedFiles.length > 0) {
-            prompt += '📁 **WISSENSBASIS:**\n';
-            prompt += 'Du hast Zugriff auf folgende hochgeladene Dokumente:\n\n';
-            uploadedFiles.forEach((file, index) => {
-                prompt += `--- DOKUMENT ${index + 1}: ${file.name} ---\n`;
-                prompt += `Dateityp: ${file.type}\n`;
-                prompt += `Inhalt:\n${file.content.substring(0, 8000)}\n\n`;
-            });
-            prompt += '\n💡 **WICHTIG:** Beantworte Fragen basierend auf diesen Dokumenten. Wenn die Antwort in den Dokumenten steht, zitiere relevante Teile.\n\n';
-        }
-
-        return prompt;
-    }
-
-    async handleCalendarRequest(botType, response, originalMessage) {
-        try {
-            // Parse Zeitraum aus Response
-            const zeitraumMatch = response.match(/CALENDAR_REQUEST:\s*(.+)/i);
-            if (!zeitraumMatch) {
-                return response.replace(/CALENDAR_REQUEST:.+/i, '');
-            }
-
-            const zeitraum = zeitraumMatch[1].trim();
-            console.log('📅 Calendar Request erkannt:', zeitraum);
-
-            // Berechne Start/End Datum
-            const { start, end } = this.parseZeitraum(zeitraum);
-
-            // Rufe Google Calendar API ab
-            const result = await this.agentSystem.listCalendarEvents(
-                botType, 
-                start.toISOString(), 
-                end.toISOString()
-            );
-
-            if (result.success && result.events) {
-                let eventText = `📅 **Deine Termine (${zeitraum}):**\n\n`;
-                
-                if (result.events.length === 0) {
-                    eventText = `✅ Du hast keine Termine ${zeitraum}.`;
-                } else {
-                    result.events.forEach((event, i) => {
-                        const startDate = new Date(event.start.dateTime || event.start.date);
-                        eventText += `${i + 1}. **${event.summary || 'Kein Titel'}**\n`;
-                        eventText += `   🕐 ${startDate.toLocaleString('de-DE')}\n`;
-                        if (event.location) eventText += `   📍 ${event.location}\n`;
-                        if (event.description) eventText += `   📝 ${event.description.substring(0, 100)}\n`;
-                        eventText += '\n';
-                    });
-                }
-                
-                return eventText;
-            } else {
-                return `⚠️ ${result.message || 'Fehler beim Abrufen der Termine. Bitte stelle sicher, dass Google Calendar verbunden ist.'}`;
-            }
-
-        } catch (error) {
-            console.error('Calendar Request Error:', error);
-            return `⚠️ Fehler beim Abrufen der Kalender-Daten: ${error.message}`;
-        }
-    }
-
-    parseZeitraum(zeitraum) {
-        const heute = new Date();
-        let start = new Date(heute);
-        let end = new Date(heute);
-
-        const zeitraumLower = zeitraum.toLowerCase();
-
-        if (zeitraumLower.includes('morgen')) {
-            start.setDate(heute.getDate() + 1);
-            start.setHours(0, 0, 0, 0);
-            end.setDate(heute.getDate() + 1);
-            end.setHours(23, 59, 59, 999);
-        } else if (zeitraumLower.includes('nächste woche') || zeitraumLower.includes('naechste woche')) {
-            // Nächster Montag
-            const tagBisMonatg = (8 - heute.getDay()) % 7 || 7;
-            start.setDate(heute.getDate() + tagBisMonatg);
-            start.setHours(0, 0, 0, 0);
-            end.setDate(start.getDate() + 6);
-            end.setHours(23, 59, 59, 999);
-        } else if (zeitraumLower.includes('diese woche')) {
-            // Montag dieser Woche
-            const tagBisMonatg = heute.getDay() === 0 ? -6 : 1 - heute.getDay();
-            start.setDate(heute.getDate() + tagBisMonatg);
-            start.setHours(0, 0, 0, 0);
-            end.setDate(start.getDate() + 6);
-            end.setHours(23, 59, 59, 999);
-        } else {
-            // Heute (Standard)
-            start.setHours(0, 0, 0, 0);
-            end.setHours(23, 59, 59, 999);
-        }
-
-        return { start, end };
-    }
-}
-
 // Mistral AI API Management
 class ChatManager {
-    constructor(mistralManager, agentSystem) {
+    constructor(mistralManager) {
         this.mistralManager = mistralManager;
-        this.agentSystem = agentSystem;
-        this.geminiManager = new GeminiManager(agentSystem);
-        
-        // Mache GeminiManager global verfügbar
-        window.geminiManager = this.geminiManager;
-        
         this.conversations = {
             website: [],
             whatsapp: []
@@ -1460,43 +1258,6 @@ class ChatManager {
 
         this.addMessage(botType, message, true);
 
-        // 🆕 Prüfe ob Gemini oder Mistral verwendet werden soll
-        const useGemini = localStorage.getItem(`${botType}_use_gemini`) === 'true';
-        
-        if (useGemini) {
-            return await this.sendGeminiMessage(botType, message);
-        } else {
-            return await this.sendMistralMessage(botType, message);
-        }
-    }
-
-    async sendGeminiMessage(botType, message) {
-        // Zeige Lade-Indikator
-        const loadingMsg = document.createElement('div');
-        loadingMsg.className = 'chat-message bot';
-        loadingMsg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Denke nach (Gemini)...';
-        const chat = document.getElementById(`${botType}BotChat`);
-        chat.appendChild(loadingMsg);
-        chat.scrollTop = chat.scrollHeight;
-
-        try {
-            const uploadedFiles = fileManager.files[botType] || [];
-            const response = await this.geminiManager.callGemini(botType, message, uploadedFiles);
-            
-            // Entferne Lade-Indikator
-            chat.removeChild(loadingMsg);
-            
-            // Zeige Antwort
-            this.addMessage(botType, response, false);
-            
-        } catch (error) {
-            console.error('Gemini Error:', error);
-            chat.removeChild(loadingMsg);
-            this.addMessage(botType, `⚠️ Gemini Fehler: ${error.message}`, false);
-        }
-    }
-
-    async sendMistralMessage(botType, message) {
         // API-Key direkt aus dem Input-Feld holen und validieren
         const apiKeyInput = document.getElementById(botType === 'whatsapp' ? 'whatsappMistralKey' : 'apiKeyInput');
         const currentApiKey = apiKeyInput?.value?.trim() || '';
@@ -1557,15 +1318,17 @@ class ChatManager {
             systemPrompt += this.personalities[botType] || "Du bist ein hilfsbereiter Assistent.";
             
             // Füge Agent-Fähigkeiten zum System-Prompt hinzu
-            const availableTools = this.agentSystem.getAvailableTools(botType);
-            if (availableTools.length > 0) {
-                systemPrompt += "\n\n🤖 **AGENT-FÄHIGKEITEN:**\n";
-                systemPrompt += "Du bist ein intelligenter Agent und kannst folgende Aktionen ausführen:\n";
-                availableTools.forEach(tool => {
-                    systemPrompt += `- ${tool.function.name}: ${tool.function.description}\n`;
-                });
-                systemPrompt += "\nWenn der Benutzer eine Aktion wünscht (z.B. 'Buche einen Termin' oder 'Zeig mir meine Termine'), nutze die verfügbaren Tools!";
-                systemPrompt += "\n⚠️ WICHTIG: Beachte das heutige Datum (siehe oben) bei relativen Zeitangaben wie 'morgen', 'nächste Woche', etc.";
+            if (window.agentSystem && typeof window.agentSystem.getAvailableTools === 'function') {
+                const availableTools = window.agentSystem.getAvailableTools(botType);
+                if (availableTools.length > 0) {
+                    systemPrompt += "\n\n🤖 **AGENT-FÄHIGKEITEN:**\n";
+                    systemPrompt += "Du bist ein intelligenter Agent und kannst folgende Aktionen ausführen:\n";
+                    availableTools.forEach(tool => {
+                        systemPrompt += `- ${tool.function.name}: ${tool.function.description}\n`;
+                    });
+                    systemPrompt += "\nWenn der Benutzer eine Aktion wünscht (z.B. 'Buche einen Termin' oder 'Zeig mir meine Termine'), nutze die verfügbaren Tools!";
+                    systemPrompt += "\n⚠️ WICHTIG: Beachte das heutige Datum (siehe oben) bei relativen Zeitangaben wie 'morgen', 'nächste Woche', etc.";
+                }
             }
             
             // Füge hochgeladene Dateien als Kontext hinzu
@@ -1594,36 +1357,35 @@ class ChatManager {
                 content: message
             });
             
-            // Verfügbare Modelle in Reihenfolge (vom besten zum günstigsten als Fallback)
-            const availableModels = [
-                this.mistralManager[`${botType}Model`] || "mistral-large-latest",
-                "mistral-small-latest",
-                "open-mistral-7b",
-                "open-mixtral-8x7b"
-            ];
+            // Bereite API-Request vor
+            const requestBody = {
+                model: this.mistralManager[`${botType}Model`] || "mistral-large-latest",
+                messages: messages,
+                temperature: 0.7,
+                max_tokens: 2000
+            };
 
-            let response = null;
-            let lastError = null;
-            let usedModel = null;
-
-            // Versuche Modelle in Reihenfolge bis eines funktioniert
-            for (const model of availableModels) {
+            // Füge Tools hinzu, falls verfügbar (Mistral AI Function Calling)
+            if (availableTools.length > 0) {
+                requestBody.tools = availableTools;
+                requestBody.tool_choice = 'auto';
+            }
+            
+            // ✅ VERBESSERTE RETRY-LOGIK - Erster Versuch sofort, dann Retry bei Fehler
+            const maxRetries = 3; // Max 3 Wiederholungen (= 4 Versuche insgesamt)
+            let attempt = 0;
+            let response;
+            let lastError;
+            
+            while (attempt <= maxRetries) {
                 try {
-                    // Bereite API-Request vor
-                    const requestBody = {
-                        model: model,
-                        messages: messages,
-                        temperature: 0.7,
-                        max_tokens: 2000
-                    };
-
-                    // Füge Tools hinzu, falls verfügbar (Mistral AI Function Calling)
-                    if (availableTools.length > 0) {
-                        requestBody.tools = availableTools;
-                        requestBody.tool_choice = 'auto';
+                    // Zeige Retry-Status nur bei Wiederholungen (nicht beim ersten Mal)
+                    if (attempt > 0) {
+                        const waitSeconds = attempt * 2; // 2s, 4s, 6s
+                        loadingMsg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Wiederhole Anfrage (${attempt}/${maxRetries})... warte ${waitSeconds}s`;
+                        // Warte vor dem Retry
+                        await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
                     }
-                    
-                    console.log(`🔄 Versuche Modell: ${model}`);
                     
                     // Anfrage an Mistral AI-API senden
                     response = await fetch("https://api.mistral.ai/v1/chat/completions", {
@@ -1634,41 +1396,51 @@ class ChatManager {
                         },
                         body: JSON.stringify(requestBody)
                     });
-
-                    // Wenn erfolgreich (Status 200), beende die Schleife
+                    
+                    // ✅ Erfolg - breche Schleife ab
                     if (response.ok) {
-                        usedModel = model;
-                        console.log(`✅ Erfolgreich mit Modell: ${model}`);
+                        console.log(`✅ Erfolg beim ${attempt === 0 ? 'ersten Versuch' : `${attempt + 1}. Versuch`}`);
                         break;
                     }
-
-                    // Bei 503 (Service unavailable) oder 529 (capacity exceeded) - versuche nächstes Modell
+                    
+                    // Prüfe ob Retry sinnvoll ist
                     const errorData = await response.json().catch(() => ({}));
-                    if (response.status === 503 || response.status === 529 || 
-                        (errorData.message && errorData.message.includes('capacity exceeded'))) {
-                        console.warn(`⚠️ Modell ${model} überlastet, versuche nächstes...`);
-                        lastError = `Modell ${model} überlastet`;
-                        continue; // Versuche nächstes Modell
+                    
+                    // Bei Überlastung (429, 503) oder "capacity exceeded" -> Retry
+                    if (response.status === 429 || response.status === 503 || 
+                        (errorData.message && (errorData.message.includes('capacity exceeded') || 
+                         errorData.message.includes('rate limit')))) {
+                        
+                        console.warn(`⚠️ Server überlastet (${response.status}). Versuch ${attempt + 1}/${maxRetries + 1}`);
+                        
+                        attempt++;
+                        if (attempt <= maxRetries) {
+                            continue; // Nächster Versuch
+                        }
                     }
-
-                    // Bei anderen Fehlern (401, 400, etc.) - sofort abbrechen
-                    lastError = errorData.message || response.statusText;
+                    
+                    // Bei anderen Fehlern -> kein Retry
+                    lastError = errorData;
                     break;
-
+                    
                 } catch (fetchError) {
-                    console.error(`❌ Fehler mit Modell ${model}:`, fetchError);
-                    lastError = fetchError.message;
-                    continue; // Versuche nächstes Modell
+                    console.error('❌ Netzwerkfehler:', fetchError);
+                    attempt++;
+                    if (attempt <= maxRetries) {
+                        continue;
+                    }
+                    throw fetchError;
                 }
             }
 
             // Entferne Lade-Indikator
             chat.removeChild(loadingMsg);
 
-            if (!response || !response.ok) {
-                let errorMessage = `API-Fehler: `;
+            if (!response.ok) {
+                const errorData = lastError || await response.json().catch(() => ({}));
+                let errorMessage = `API-Fehler (${response.status}): `;
                 
-                if (response && response.status === 401) {
+                if (response.status === 401) {
                     errorMessage += "Ungültiger API-Schlüssel.\n\n";
                     errorMessage += "📋 So beheben Sie das Problem:\n";
                     errorMessage += "1. Geben Sie Ihren Mistral AI API-Key oben ein\n";
@@ -1676,24 +1448,23 @@ class ChatManager {
                     errorMessage += "3. Warten Sie auf die grüne Bestätigung\n";
                     errorMessage += "4. Versuchen Sie es dann erneut\n\n";
                     errorMessage += "💡 Sie benötigen einen API-Key von: https://console.mistral.ai/";
-                } else if (response && response.status === 429) {
-                    errorMessage += "Rate Limit erreicht. Bitte warten Sie einen Moment.";
-                } else if (response && response.status === 400) {
-                    const errorData = await response.json().catch(() => ({}));
+                } else if (response.status === 429 || response.status === 503) {
+                    errorMessage += "⚠️ Server überlastet - Alle Wiederholungsversuche fehlgeschlagen.\n\n";
+                    errorMessage += "💡 Tipps:\n";
+                    errorMessage += "• Warten Sie 1-2 Minuten\n";
+                    errorMessage += "• Verwenden Sie ein kleineres Modell (z.B. mistral-small-latest)\n";
+                    errorMessage += "• Reduzieren Sie die Nachrichtenhäufigkeit\n";
+                    errorMessage += "• Überprüfen Sie Ihr Mistral AI Kontingent";
+                } else if (response.status === 400) {
                     errorMessage += errorData.message || "Ungültige Anfrage. Überprüfen Sie die Parameter.";
                 } else {
-                    errorMessage += lastError || "Alle Modelle sind derzeit überlastet. Bitte versuchen Sie es später erneut.";
+                    errorMessage += errorData.message || response.statusText || "Unbekannter Fehler";
                 }
                 
                 throw new Error(errorMessage);
             }
 
             const data = await response.json();
-            
-            // Zeige verwendetes Modell an (falls Fallback verwendet wurde)
-            if (usedModel !== (this.mistralManager[`${botType}Model`] || "mistral-large-latest")) {
-                this.addMessage(botType, `ℹ️ Hinweis: Primäres Modell überlastet. Verwende ${usedModel} als Fallback.`, false);
-            }
             
             if (!data.choices || !data.choices[0] || !data.choices[0].message) {
                 throw new Error("Ungültige Antwortstruktur von der API");
@@ -1713,7 +1484,7 @@ class ChatManager {
                     this.addMessage(botType, `🤖 Führe Aktion aus: ${toolName}...`, false);
                     
                     try {
-                        const toolResult = await this.agentSystem.executeTool(botType, toolName, toolArgs);
+                        const toolResult = await agentSystem.executeTool(botType, toolName, toolArgs);
                         
                         // Zeige Erfolg
                         if (toolResult.success) {
@@ -1772,13 +1543,12 @@ class ChatManager {
 }
 
 class MistralManager {
-    constructor(agentSystem) {
+    constructor() {
         this.apiKey = null;
-        this.agentSystem = agentSystem;
         // Lade gespeicherte Modelle oder verwende Standardwerte
         this.websiteModel = localStorage.getItem('website_model') || 'mistral-large-latest';
         this.whatsappModel = localStorage.getItem('whatsapp_model') || 'mistral-large-latest';
-        this.chatManager = new ChatManager(this, agentSystem);
+        this.chatManager = new ChatManager(this);
         this.initializeListeners();
     }
 
@@ -2060,7 +1830,7 @@ const apiKeyManager = new APIKeyManager();
 const botConfigManager = new BotConfigManager();
 const fileManager = new FileManager();
 const agentSystem = new AgentSystem(); // WICHTIG: Agent System initialisieren
-const mistralManager = new MistralManager(agentSystem); // Pass agentSystem to MistralManager
+const mistralManager = new MistralManager();
 const analyticsManager = new AnalyticsManager();
 
 // Make agentSystem globally available
@@ -2071,187 +1841,12 @@ window.sendBotInstruction = function(botType) {
     mistralManager.chatManager.sendBotInstruction(botType);
 };
 
-// 🆕 UNIFIED API VALIDATION - KOMPLETT NEU - erkennt automatisch Mistral oder Gemini
-window.validateApiKey = async function(botType) {
-    console.log(`🔍 VALIDATION STARTED for ${botType}`);
-    
-    const keyInputId = botType === 'whatsapp' ? 'whatsappMistralKey' : 'apiKeyInput';
-    const keyInput = document.getElementById(keyInputId);
-    const statusDiv = document.getElementById(`${botType}ApiStatus`);
-    
-    const apiKey = keyInput.value.trim();
-    
-    if (!apiKey) {
-        statusDiv.innerHTML = '<span style="color: #ef4444;">⚠️ Bitte API-Schlüssel eingeben!</span>';
-        console.error('❌ Kein API-Key eingegeben!');
-        return;
-    }
-    
-    // Hole ausgewähltes Modell
-    const modelSelectId = botType === 'whatsapp' ? 'whatsappModelSelect' : 'modelSelect';
-    const modelSelect = document.getElementById(modelSelectId);
-    const selectedModel = modelSelect.value;
-    
-    // Prüfe ob Gemini oder Mistral basierend auf Modell
-    const isGemini = selectedModel.startsWith('gemini');
-    const apiName = isGemini ? 'Google Gemini' : 'Mistral AI';
-    
-    console.log(`📊 Ausgewähltes Modell: ${selectedModel}`);
-    console.log(`🔍 API Typ: ${apiName}`);
-    console.log(`🔑 API Key (erste 10 Zeichen): ${apiKey.substring(0, 10)}...`);
-    
-    statusDiv.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Validiere ${apiName}...`;
-    
-    try {
-        if (isGemini) {
-            console.log('🔵 Validiere GEMINI API...');
-            // Validiere Gemini API
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro?key=${apiKey}`;
-            console.log(`📡 Gemini URL: ${url.substring(0, 80)}...`);
-            
-            const response = await fetch(url);
-            console.log(`📥 Gemini Response Status: ${response.status}`);
-            
-            if (response.ok) {
-                statusDiv.innerHTML = '<span style="color: #10b981; font-weight: 600;">✅ Google Gemini API-Schlüssel gültig!</span>';
-                localStorage.setItem(`${botType}_gemini_api_key`, apiKey);
-                localStorage.setItem(`${botType}_use_gemini`, 'true');
-                console.log('✅ GEMINI API-Key gültig und gespeichert!');
-            } else {
-                const errorData = await response.json().catch(() => ({}));
-                const errorMsg = errorData.error?.message || 'API-Schlüssel ungültig';
-                statusDiv.innerHTML = `<span style="color: #ef4444; font-weight: 600;">❌ Ungültiger Google Gemini API-Schlüssel</span><br><small style="color: #64748b;">${errorMsg}</small>`;
-                console.error(`❌ GEMINI Validierung fehlgeschlagen: ${errorMsg}`);
-            }
-        } else {
-            console.log('🟠 Validiere MISTRAL API...');
-            // Validiere Mistral API
-            const response = await fetch("https://api.mistral.ai/v1/models", {
-                headers: {
-                    "Authorization": `Bearer ${apiKey}`
-                }
-            });
-            console.log(`📥 Mistral Response Status: ${response.status}`);
-            
-            if (response.ok) {
-                statusDiv.innerHTML = '<span style="color: #10b981; font-weight: 600;">✅ Mistral AI API-Schlüssel gültig!</span>';
-                localStorage.setItem(`${botType}_mistral_api_key`, apiKey);
-                if (botType === 'website') localStorage.setItem("mistral_api_key", apiKey);
-                localStorage.setItem(`${botType}_use_gemini`, 'false');
-                console.log('✅ MISTRAL API-Key gültig und gespeichert!');
-            } else {
-                statusDiv.innerHTML = '<span style="color: #ef4444; font-weight: 600;">❌ Ungültiger Mistral AI API-Schlüssel</span><br><small style="color: #64748b;">Bitte prüfen Sie Ihren API-Key</small>';
-                console.error(`❌ MISTRAL Validierung fehlgeschlagen: ${response.status}`);
-            }
-        }
-    } catch (error) {
-        statusDiv.innerHTML = `<span style="color: #ef4444; font-weight: 600;">❌ ${apiName} Fehler</span><br><small style="color: #64748b;">${error.message}</small>`;
-        console.error(`❌ FEHLER bei ${apiName} Validierung:`, error);
-    }
-};
-
-// 🆕 HANDLE MODEL CHANGE - aktualisiert Label und Placeholder
-window.handleModelChange = function(botType) {
-    const modelSelectId = botType === 'whatsapp' ? 'whatsappModelSelect' : 'modelSelect';
-    const modelSelect = document.getElementById(modelSelectId);
-    const selectedModel = modelSelect.value;
-    
-    const isGemini = selectedModel.startsWith('gemini');
-    
-    console.log(`🔄 ${botType} Model gewechselt zu: ${selectedModel} (${isGemini ? 'Gemini' : 'Mistral'})`);
-    
-    // Update API-Key Label
-    const labelId = `${botType}ApiKeyLabel`;
-    const label = document.getElementById(labelId);
-    if (label) {
-        label.textContent = isGemini ? 'Google Gemini API-Schlüssel' : 'Mistral AI API-Schlüssel';
-        console.log(`✓ Label aktualisiert: ${label.textContent}`);
-    }
-    
-    // Update Placeholder
-    const keyInputId = botType === 'whatsapp' ? 'whatsappMistralKey' : 'apiKeyInput';
-    const keyInput = document.getElementById(keyInputId);
-    if (keyInput) {
-        keyInput.placeholder = isGemini 
-            ? 'Google Gemini API-Schlüssel (AIza...)' 
-            : 'Mistral AI API-Schlüssel eingeben...';
-    }
-    
-    // Lade gespeicherten API-Key
-    const savedKey = isGemini 
-        ? localStorage.getItem(`${botType}_gemini_api_key`) 
-        : localStorage.getItem(`${botType}_mistral_api_key`) || localStorage.getItem("mistral_api_key");
-    
-    if (keyInput) {
-        if (savedKey) {
-            keyInput.value = savedKey;
-            console.log(`✓ Gespeicherter ${isGemini ? 'Gemini' : 'Mistral'} Key geladen`);
-        } else {
-            keyInput.value = '';
-            console.log(`ℹ Kein gespeicherter ${isGemini ? 'Gemini' : 'Mistral'} Key gefunden`);
-        }
-    }
-    
-    // Speichere Modell-Auswahl und setze use_gemini Flag
-    if (isGemini) {
-        localStorage.setItem(`${botType}_gemini_model`, selectedModel);
-        localStorage.setItem(`${botType}_use_gemini`, 'true');
-        // Aktualisiere GeminiManager Modell
-        if (window.geminiManager) {
-            window.geminiManager[`${botType}Model`] = selectedModel;
-            console.log(`✓ GeminiManager Model aktualisiert: ${selectedModel}`);
-        }
-    } else {
-        localStorage.setItem(`${botType}_model`, selectedModel);
-        localStorage.setItem(`${botType}_use_gemini`, 'false');
-        mistralManager[`${botType}Model`] = selectedModel;
-        console.log(`✓ MistralManager Model aktualisiert: ${selectedModel}`);
-    }
-    
-    // Status zurücksetzen
-    const statusDiv = document.getElementById(`${botType}ApiStatus`);
-    if (statusDiv) {
-        statusDiv.innerHTML = '';
-    }
-    
-    console.log(`✓ use_gemini Flag gesetzt auf: ${localStorage.getItem(botType + '_use_gemini')}`);
-};
-
-// 🆕 SAVE API KEY - universal für beide APIs
-window.saveApiKey = function(botType) {
-    const keyInputId = botType === 'whatsapp' ? 'whatsappMistralKey' : 'apiKeyInput';
-    const keyInput = document.getElementById(keyInputId);
-    const apiKey = keyInput.value.trim();
-    
-    if (!apiKey) {
-        alert('⚠️ Bitte API-Schlüssel eingeben!');
-        return;
-    }
-    
-    // Prüfe ob Gemini oder Mistral
-    const modelSelectId = botType === 'whatsapp' ? 'whatsappModelSelect' : 'modelSelect';
-    const modelSelect = document.getElementById(modelSelectId);
-    const selectedModel = modelSelect.value;
-    const isGemini = selectedModel.startsWith('gemini');
-    
-    console.log(`💾 Speichere ${isGemini ? 'Gemini' : 'Mistral'} API-Key für ${botType}...`);
-    
-    if (isGemini) {
-        localStorage.setItem(`${botType}_gemini_api_key`, apiKey);
-        localStorage.setItem(`${botType}_use_gemini`, 'true');
-        console.log(`✅ Gemini Key gespeichert unter: ${botType}_gemini_api_key`);
-        alert('✅ Gemini API-Schlüssel gespeichert!\n\n💡 Tipp: Klicken Sie auf "Validieren" um den Key zu testen.');
-    } else {
-        localStorage.setItem(`${botType}_mistral_api_key`, apiKey);
-        if (botType === 'website') localStorage.setItem("mistral_api_key", apiKey);
-        localStorage.setItem(`${botType}_use_gemini`, 'false');
-        console.log(`✅ Mistral Key gespeichert unter: ${botType}_mistral_api_key`);
-        alert('✅ Mistral AI API-Schlüssel gespeichert!\n\n💡 Tipp: Klicken Sie auf "Validieren" um den Key zu testen.');
-    }
+window.validateApiKey = function() {
+    mistralManager.validateApiKey('website');
 };
 
 window.validateWhatsappApiKey = function() {
-    validateApiKey('whatsapp');
+    mistralManager.validateApiKey('whatsapp');
 };
 
 window.saveAgentConfig = function(botType, apiType) {
@@ -2808,70 +2403,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize counters
     updateApiCounter('website');
     updateApiCounter('whatsapp');
-    
-    // 🆕 Load saved model selections and API keys
-    loadModelAndApiSettings();
 });
-
-// 🆕 Load Model and API Settings on Page Load
-function loadModelAndApiSettings() {
-    console.log('🔄 Lade gespeicherte Modell- und API-Einstellungen...');
-    
-    ['website', 'whatsapp'].forEach(botType => {
-        const modelSelectId = botType === 'whatsapp' ? 'whatsappModelSelect' : 'modelSelect';
-        const modelSelect = document.getElementById(modelSelectId);
-        
-        if (!modelSelect) {
-            console.warn(`⚠️ Model Select für ${botType} nicht gefunden`);
-            return;
-        }
-        
-        // Prüfe ob Gemini verwendet werden soll
-        const useGemini = localStorage.getItem(`${botType}_use_gemini`) === 'true';
-        
-        console.log(`📊 ${botType}: use_gemini = ${useGemini}`);
-        
-        if (useGemini) {
-            // Lade Gemini-Modell
-            const geminiModel = localStorage.getItem(`${botType}_gemini_model`) || 'gemini-1.5-flash';
-            modelSelect.value = geminiModel;
-            console.log(`✓ ${botType}: Gemini Modell geladen: ${geminiModel}`);
-            
-            // Lade Gemini API-Key
-            const geminiKey = localStorage.getItem(`${botType}_gemini_api_key`);
-            if (geminiKey) {
-                const keyInputId = botType === 'whatsapp' ? 'whatsappMistralKey' : 'apiKeyInput';
-                const keyInput = document.getElementById(keyInputId);
-                if (keyInput) {
-                    keyInput.value = geminiKey;
-                    console.log(`✓ ${botType}: Gemini API-Key geladen (${geminiKey.substring(0, 10)}...)`);
-                }
-            }
-        } else {
-            // Lade Mistral-Modell
-            const mistralModel = localStorage.getItem(`${botType}_model`) || 'mistral-large-latest';
-            modelSelect.value = mistralModel;
-            console.log(`✓ ${botType}: Mistral Modell geladen: ${mistralModel}`);
-            
-            // Lade Mistral API-Key
-            const mistralKey = localStorage.getItem(`${botType}_mistral_api_key`) || 
-                              (botType === 'website' ? localStorage.getItem("mistral_api_key") : null);
-            if (mistralKey) {
-                const keyInputId = botType === 'whatsapp' ? 'whatsappMistralKey' : 'apiKeyInput';
-                const keyInput = document.getElementById(keyInputId);
-                if (keyInput) {
-                    keyInput.value = mistralKey;
-                    console.log(`✓ ${botType}: Mistral API-Key geladen (${mistralKey.substring(0, 10)}...)`);
-                }
-            }
-        }
-        
-        // Trigger handleModelChange um Labels zu aktualisieren
-        handleModelChange(botType);
-    });
-    
-    console.log('✅ Modell- und API-Einstellungen geladen');
-}
 
 // Load saved APIs on page load
 function loadSavedApis() {
@@ -2993,8 +2525,11 @@ window.sendChatMessage = async function(botType) {
         
         let systemPrompt = `📅 WICHTIG: Heute ist ${datumString}.\n\n${personality}`;
         
-        // Hole AgentSystem Tools (Google Calendar Integration)
-        const availableTools = window.agentSystem.getAvailableTools(botType);
+        // Hole AgentSystem Tools (Google Calendar Integration) - mit Safety Check
+        let availableTools = [];
+        if (window.agentSystem && typeof window.agentSystem.getAvailableTools === 'function') {
+            availableTools = window.agentSystem.getAvailableTools(botType);
+        }
         
         if (availableTools.length > 0) {
             systemPrompt += '\n\n🤖 AGENT-FÄHIGKEITEN:\n';
@@ -3023,18 +2558,69 @@ window.sendChatMessage = async function(botType) {
             requestBody.tool_choice = 'auto';
         }
         
-        // Rufe Mistral AI auf
-        const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify(requestBody)
-        });
+        // ✅ OPTIMIERTE RETRY-LOGIK - Erster Versuch sofort!
+        const maxRetries = 3;
+        let attempt = 0;
+        let response;
+        let lastError;
+        
+        while (attempt <= maxRetries) {
+            try {
+                // Zeige Retry-Status nur bei Wiederholungen
+                if (attempt > 0) {
+                    const waitSeconds = attempt * 2; // 2s, 4s, 6s
+                    typingDiv.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Wiederhole (${attempt}/${maxRetries})... ${waitSeconds}s`;
+                    // Warte VOR dem Retry
+                    await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
+                }
+                
+                // Rufe Mistral AI auf
+                response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                // ✅ Erfolg
+                if (response.ok) {
+                    console.log(`✅ Chat-Erfolg beim ${attempt === 0 ? 'ersten Versuch' : `${attempt + 1}. Versuch`}`);
+                    break;
+                }
+                
+                // Fehler analysieren
+                const errorData = await response.json().catch(() => ({}));
+                
+                // Bei Überlastung -> Retry
+                if (response.status === 429 || response.status === 503 || 
+                    (errorData.message && (errorData.message.includes('capacity exceeded') || 
+                     errorData.message.includes('rate limit')))) {
+                    
+                    console.warn(`⚠️ Chat-Server überlastet. Versuch ${attempt + 1}/${maxRetries + 1}`);
+                    
+                    attempt++;
+                    if (attempt <= maxRetries) {
+                        continue;
+                    }
+                }
+                
+                lastError = errorData;
+                break;
+                
+            } catch (fetchError) {
+                console.error('❌ Chat-Netzwerkfehler:', fetchError);
+                attempt++;
+                if (attempt <= maxRetries) {
+                    continue;
+                }
+                throw fetchError;
+            }
+        }
         
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
+            const errorData = lastError || await response.json().catch(() => ({}));
             throw new Error(errorData.message || `Mistral API Error: ${response.status}`);
         }
         
@@ -3054,6 +2640,17 @@ window.sendChatMessage = async function(botType) {
                 const toolArgs = JSON.parse(toolCall.function.arguments);
                 
                 console.log(`🔧 Führe ${toolName} aus mit:`, toolArgs);
+                
+                // Safety Check für agentSystem
+                if (!window.agentSystem || typeof window.agentSystem.executeTool !== 'function') {
+                    console.error('❌ AgentSystem nicht verfügbar');
+                    const errorMsgDiv = document.createElement('div');
+                    errorMsgDiv.className = 'chat-message bot';
+                    errorMsgDiv.style.color = '#ef4444';
+                    errorMsgDiv.textContent = '⚠️ Agent-Funktionen sind nicht verfügbar. Bitte Seite neu laden.';
+                    messagesContainer.appendChild(errorMsgDiv);
+                    continue;
+                }
                 
                 const toolResult = await window.agentSystem.executeTool(botType, toolName, toolArgs);
                 
@@ -3130,4 +2727,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-

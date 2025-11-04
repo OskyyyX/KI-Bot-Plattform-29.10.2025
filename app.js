@@ -1254,6 +1254,10 @@ class ChatManager {
         this.mistralManager = mistralManager;
         this.agentSystem = agentSystem;
         this.geminiManager = new GeminiManager(agentSystem);
+        
+        // Mache GeminiManager global verfügbar
+        window.geminiManager = this.geminiManager;
+        
         this.conversations = {
             website: [],
             whatsapp: []
@@ -2067,8 +2071,10 @@ window.sendBotInstruction = function(botType) {
     mistralManager.chatManager.sendBotInstruction(botType);
 };
 
-// 🆕 UNIFIED API VALIDATION - erkennt automatisch Mistral oder Gemini
+// 🆕 UNIFIED API VALIDATION - KOMPLETT NEU - erkennt automatisch Mistral oder Gemini
 window.validateApiKey = async function(botType) {
+    console.log(`🔍 VALIDATION STARTED for ${botType}`);
+    
     const keyInputId = botType === 'whatsapp' ? 'whatsappMistralKey' : 'apiKeyInput';
     const keyInput = document.getElementById(keyInputId);
     const statusDiv = document.getElementById(`${botType}ApiStatus`);
@@ -2076,7 +2082,8 @@ window.validateApiKey = async function(botType) {
     const apiKey = keyInput.value.trim();
     
     if (!apiKey) {
-        statusDiv.innerHTML = '<span class="error">⚠️ Bitte API-Schlüssel eingeben!</span>';
+        statusDiv.innerHTML = '<span style="color: #ef4444;">⚠️ Bitte API-Schlüssel eingeben!</span>';
+        console.error('❌ Kein API-Key eingegeben!');
         return;
     }
     
@@ -2085,43 +2092,61 @@ window.validateApiKey = async function(botType) {
     const modelSelect = document.getElementById(modelSelectId);
     const selectedModel = modelSelect.value;
     
-    statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validiere...';
-    
     // Prüfe ob Gemini oder Mistral basierend auf Modell
     const isGemini = selectedModel.startsWith('gemini');
+    const apiName = isGemini ? 'Google Gemini' : 'Mistral AI';
+    
+    console.log(`📊 Ausgewähltes Modell: ${selectedModel}`);
+    console.log(`🔍 API Typ: ${apiName}`);
+    console.log(`🔑 API Key (erste 10 Zeichen): ${apiKey.substring(0, 10)}...`);
+    
+    statusDiv.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Validiere ${apiName}...`;
     
     try {
         if (isGemini) {
+            console.log('🔵 Validiere GEMINI API...');
             // Validiere Gemini API
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro?key=${apiKey}`);
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro?key=${apiKey}`;
+            console.log(`📡 Gemini URL: ${url.substring(0, 80)}...`);
+            
+            const response = await fetch(url);
+            console.log(`📥 Gemini Response Status: ${response.status}`);
             
             if (response.ok) {
-                statusDiv.innerHTML = '<span class="success">✅ Gemini API-Schlüssel gültig!</span>';
+                statusDiv.innerHTML = '<span style="color: #10b981; font-weight: 600;">✅ Google Gemini API-Schlüssel gültig!</span>';
                 localStorage.setItem(`${botType}_gemini_api_key`, apiKey);
                 localStorage.setItem(`${botType}_use_gemini`, 'true');
+                console.log('✅ GEMINI API-Key gültig und gespeichert!');
             } else {
                 const errorData = await response.json().catch(() => ({}));
-                statusDiv.innerHTML = `<span class="error">❌ Ungültiger Gemini-Schlüssel: ${errorData.error?.message || response.status}</span>`;
+                const errorMsg = errorData.error?.message || 'API-Schlüssel ungültig';
+                statusDiv.innerHTML = `<span style="color: #ef4444; font-weight: 600;">❌ Ungültiger Google Gemini API-Schlüssel</span><br><small style="color: #64748b;">${errorMsg}</small>`;
+                console.error(`❌ GEMINI Validierung fehlgeschlagen: ${errorMsg}`);
             }
         } else {
+            console.log('🟠 Validiere MISTRAL API...');
             // Validiere Mistral API
             const response = await fetch("https://api.mistral.ai/v1/models", {
                 headers: {
                     "Authorization": `Bearer ${apiKey}`
                 }
             });
+            console.log(`📥 Mistral Response Status: ${response.status}`);
             
             if (response.ok) {
-                statusDiv.innerHTML = '<span class="success">✅ Mistral AI API-Schlüssel gültig!</span>';
+                statusDiv.innerHTML = '<span style="color: #10b981; font-weight: 600;">✅ Mistral AI API-Schlüssel gültig!</span>';
                 localStorage.setItem(`${botType}_mistral_api_key`, apiKey);
                 if (botType === 'website') localStorage.setItem("mistral_api_key", apiKey);
                 localStorage.setItem(`${botType}_use_gemini`, 'false');
+                console.log('✅ MISTRAL API-Key gültig und gespeichert!');
             } else {
-                statusDiv.innerHTML = '<span class="error">❌ Ungültiger Mistral-Schlüssel!</span>';
+                statusDiv.innerHTML = '<span style="color: #ef4444; font-weight: 600;">❌ Ungültiger Mistral AI API-Schlüssel</span><br><small style="color: #64748b;">Bitte prüfen Sie Ihren API-Key</small>';
+                console.error(`❌ MISTRAL Validierung fehlgeschlagen: ${response.status}`);
             }
         }
     } catch (error) {
-        statusDiv.innerHTML = `<span class="error">❌ Fehler: ${error.message}</span>`;
+        statusDiv.innerHTML = `<span style="color: #ef4444; font-weight: 600;">❌ ${apiName} Fehler</span><br><small style="color: #64748b;">${error.message}</small>`;
+        console.error(`❌ FEHLER bei ${apiName} Validierung:`, error);
     }
 };
 
@@ -2133,11 +2158,14 @@ window.handleModelChange = function(botType) {
     
     const isGemini = selectedModel.startsWith('gemini');
     
+    console.log(`🔄 ${botType} Model gewechselt zu: ${selectedModel} (${isGemini ? 'Gemini' : 'Mistral'})`);
+    
     // Update API-Key Label
     const labelId = `${botType}ApiKeyLabel`;
     const label = document.getElementById(labelId);
     if (label) {
         label.textContent = isGemini ? 'Google Gemini API-Schlüssel' : 'Mistral AI API-Schlüssel';
+        console.log(`✓ Label aktualisiert: ${label.textContent}`);
     }
     
     // Update Placeholder
@@ -2154,24 +2182,39 @@ window.handleModelChange = function(botType) {
         ? localStorage.getItem(`${botType}_gemini_api_key`) 
         : localStorage.getItem(`${botType}_mistral_api_key`) || localStorage.getItem("mistral_api_key");
     
-    if (keyInput && savedKey) {
-        keyInput.value = savedKey;
+    if (keyInput) {
+        if (savedKey) {
+            keyInput.value = savedKey;
+            console.log(`✓ Gespeicherter ${isGemini ? 'Gemini' : 'Mistral'} Key geladen`);
+        } else {
+            keyInput.value = '';
+            console.log(`ℹ Kein gespeicherter ${isGemini ? 'Gemini' : 'Mistral'} Key gefunden`);
+        }
     }
     
-    // Speichere Modell-Auswahl
+    // Speichere Modell-Auswahl und setze use_gemini Flag
     if (isGemini) {
         localStorage.setItem(`${botType}_gemini_model`, selectedModel);
         localStorage.setItem(`${botType}_use_gemini`, 'true');
-        if (mistralManager.chatManager.geminiManager) {
-            mistralManager.chatManager.geminiManager[`${botType}Model`] = selectedModel;
+        // Aktualisiere GeminiManager Modell
+        if (window.geminiManager) {
+            window.geminiManager[`${botType}Model`] = selectedModel;
+            console.log(`✓ GeminiManager Model aktualisiert: ${selectedModel}`);
         }
     } else {
         localStorage.setItem(`${botType}_model`, selectedModel);
         localStorage.setItem(`${botType}_use_gemini`, 'false');
         mistralManager[`${botType}Model`] = selectedModel;
+        console.log(`✓ MistralManager Model aktualisiert: ${selectedModel}`);
     }
     
-    console.log(`� ${botType} Model: ${selectedModel} (${isGemini ? 'Gemini' : 'Mistral'})`);
+    // Status zurücksetzen
+    const statusDiv = document.getElementById(`${botType}ApiStatus`);
+    if (statusDiv) {
+        statusDiv.innerHTML = '';
+    }
+    
+    console.log(`✓ use_gemini Flag gesetzt auf: ${localStorage.getItem(botType + '_use_gemini')}`);
 };
 
 // 🆕 SAVE API KEY - universal für beide APIs
@@ -2188,15 +2231,22 @@ window.saveApiKey = function(botType) {
     // Prüfe ob Gemini oder Mistral
     const modelSelectId = botType === 'whatsapp' ? 'whatsappModelSelect' : 'modelSelect';
     const modelSelect = document.getElementById(modelSelectId);
-    const isGemini = modelSelect.value.startsWith('gemini');
+    const selectedModel = modelSelect.value;
+    const isGemini = selectedModel.startsWith('gemini');
+    
+    console.log(`💾 Speichere ${isGemini ? 'Gemini' : 'Mistral'} API-Key für ${botType}...`);
     
     if (isGemini) {
         localStorage.setItem(`${botType}_gemini_api_key`, apiKey);
-        alert('✅ Gemini API-Schlüssel gespeichert!');
+        localStorage.setItem(`${botType}_use_gemini`, 'true');
+        console.log(`✅ Gemini Key gespeichert unter: ${botType}_gemini_api_key`);
+        alert('✅ Gemini API-Schlüssel gespeichert!\n\n💡 Tipp: Klicken Sie auf "Validieren" um den Key zu testen.');
     } else {
         localStorage.setItem(`${botType}_mistral_api_key`, apiKey);
         if (botType === 'website') localStorage.setItem("mistral_api_key", apiKey);
-        alert('✅ Mistral AI API-Schlüssel gespeichert!');
+        localStorage.setItem(`${botType}_use_gemini`, 'false');
+        console.log(`✅ Mistral Key gespeichert unter: ${botType}_mistral_api_key`);
+        alert('✅ Mistral AI API-Schlüssel gespeichert!\n\n💡 Tipp: Klicken Sie auf "Validieren" um den Key zu testen.');
     }
 };
 
@@ -2765,47 +2815,62 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 🆕 Load Model and API Settings on Page Load
 function loadModelAndApiSettings() {
+    console.log('🔄 Lade gespeicherte Modell- und API-Einstellungen...');
+    
     ['website', 'whatsapp'].forEach(botType => {
         const modelSelectId = botType === 'whatsapp' ? 'whatsappModelSelect' : 'modelSelect';
         const modelSelect = document.getElementById(modelSelectId);
         
-        if (!modelSelect) return;
+        if (!modelSelect) {
+            console.warn(`⚠️ Model Select für ${botType} nicht gefunden`);
+            return;
+        }
         
         // Prüfe ob Gemini verwendet werden soll
         const useGemini = localStorage.getItem(`${botType}_use_gemini`) === 'true';
+        
+        console.log(`📊 ${botType}: use_gemini = ${useGemini}`);
         
         if (useGemini) {
             // Lade Gemini-Modell
             const geminiModel = localStorage.getItem(`${botType}_gemini_model`) || 'gemini-1.5-flash';
             modelSelect.value = geminiModel;
+            console.log(`✓ ${botType}: Gemini Modell geladen: ${geminiModel}`);
             
             // Lade Gemini API-Key
             const geminiKey = localStorage.getItem(`${botType}_gemini_api_key`);
             if (geminiKey) {
                 const keyInputId = botType === 'whatsapp' ? 'whatsappMistralKey' : 'apiKeyInput';
                 const keyInput = document.getElementById(keyInputId);
-                if (keyInput) keyInput.value = geminiKey;
+                if (keyInput) {
+                    keyInput.value = geminiKey;
+                    console.log(`✓ ${botType}: Gemini API-Key geladen (${geminiKey.substring(0, 10)}...)`);
+                }
             }
         } else {
             // Lade Mistral-Modell
             const mistralModel = localStorage.getItem(`${botType}_model`) || 'mistral-large-latest';
             modelSelect.value = mistralModel;
+            console.log(`✓ ${botType}: Mistral Modell geladen: ${mistralModel}`);
             
             // Lade Mistral API-Key
-            const mistralKey = localStorage.getItem(`${botType}_mistral_api_key`) 
-                || (botType === 'website' ? localStorage.getItem("mistral_api_key") : null);
+            const mistralKey = localStorage.getItem(`${botType}_mistral_api_key`) || 
+                              (botType === 'website' ? localStorage.getItem("mistral_api_key") : null);
             if (mistralKey) {
                 const keyInputId = botType === 'whatsapp' ? 'whatsappMistralKey' : 'apiKeyInput';
                 const keyInput = document.getElementById(keyInputId);
-                if (keyInput) keyInput.value = mistralKey;
+                if (keyInput) {
+                    keyInput.value = mistralKey;
+                    console.log(`✓ ${botType}: Mistral API-Key geladen (${mistralKey.substring(0, 10)}...)`);
+                }
             }
         }
         
-        // Trigger handleModelChange um Label zu aktualisieren
+        // Trigger handleModelChange um Labels zu aktualisieren
         handleModelChange(botType);
-        
-        console.log(`📊 ${botType} Settings loaded: ${modelSelect.value} (${useGemini ? 'Gemini' : 'Mistral'})`);
     });
+    
+    console.log('✅ Modell- und API-Einstellungen geladen');
 }
 
 // Load saved APIs on page load
@@ -3065,3 +3130,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+

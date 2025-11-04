@@ -103,34 +103,45 @@
                         </div>
                         <div class="bot-settings">
                             <div class="setting-group">
-                                <label>Mistral AI API-Konfiguration</label>
+                                <label>🤖 KI-Modell & API-Konfiguration</label>
+                                <div class="info-hint">
+                                    <p style="margin: 0; font-size: 0.875rem; color: #1976d2;">
+                                        💡 <strong>Tipp:</strong> Wähle ein Mistral- oder Gemini-Modell. Der API-Key wird automatisch erkannt!
+                                    </p>
+                                </div>
+                                
                                 <div class="api-config">
-                                    <div class="api-key-input">
-                                        <label>Mistral API-Schlüssel</label>
-                                        <div class="input-with-validation">
-                                            <input type="password" id="apiKeyInput" placeholder="Geben Sie Ihren Mistral AI API-Schlüssel ein..." class="api-key-field">
-                                            <button class="btn secondary" onclick="saveApiKey()">
-                                                <i class="fas fa-save"></i> Speichern
-                                            </button>
-                                            <button class="btn secondary validate-api-btn" onclick="validateApiKey()">
-                                                <i class="fas fa-check"></i> Validieren
-                                            </button>
-                                        </div>
-                                        <div class="api-status" id="websiteApiStatus"></div>
-                                    </div>
-                                    
                                     <div class="model-selection">
-                                        <label>Mistral AI Modell</label>
-                                        <select id="modelSelect" class="model-select">
-                                            <optgroup label="Mistral Modelle">
-                                                <option value="mistral-large-latest">Mistral Large (neueste Version)</option>
+                                        <label>KI-Modell auswählen</label>
+                                        <select id="modelSelect" class="model-select" onchange="handleModelChange('website')">
+                                            <optgroup label="🔵 Mistral AI Modelle">
+                                                <option value="mistral-large-latest">Mistral Large (Leistungsstark)</option>
                                                 <option value="mistral-medium-latest">Mistral Medium</option>
                                                 <option value="mistral-small-latest">Mistral Small</option>
                                                 <option value="open-mistral-7b">Open Mistral 7B</option>
                                                 <option value="open-mixtral-8x7b">Open Mixtral 8x7B</option>
                                                 <option value="open-mixtral-8x22b">Open Mixtral 8x22B</option>
                                             </optgroup>
+                                            <optgroup label="🟢 Google Gemini Modelle (Kostenlos)">
+                                                <option value="gemini-1.5-flash">Gemini 1.5 Flash ⚡ (Schnell - €0.35/1M)</option>
+                                                <option value="gemini-1.5-pro">Gemini 1.5 Pro 🧠 (Intelligent - €7/1M)</option>
+                                                <option value="gemini-pro">Gemini Pro (Standard)</option>
+                                            </optgroup>
                                         </select>
+                                    </div>
+                                    
+                                    <div class="api-key-input">
+                                        <label id="websiteApiKeyLabel">API-Schlüssel</label>
+                                        <div class="input-with-validation">
+                                            <input type="password" id="apiKeyInput" placeholder="API-Schlüssel eingeben..." class="api-key-field">
+                                            <button class="btn secondary" onclick="saveApiKey('website')">
+                                                <i class="fas fa-save"></i> Speichern
+                                            </button>
+                                            <button class="btn secondary validate-api-btn" onclick="validateApiKey('website')">
+                                                <i class="fas fa-check"></i> Validieren
+                                            </button>
+                                        </div>
+                                        <div class="api-status" id="websiteApiStatus"></div>
                                     </div>
                                 </div>
                             </div>
@@ -280,39 +291,38 @@
                                     <div class="tab-content" id="mistralTab">
                                         <div class="mistral-config">
                                             <div class="input-group">
-                                                <label>Mistral AI API-Schlüssel</label>
-                                                <div class="api-input-group">
-                                                    <input type="password" id="whatsappMistralKey" placeholder="Geben Sie Ihren Mistral AI API-Schlüssel ein..." class="api-key-field">
-                                                    <button class="btn secondary validate-api-btn">
-                                                        <i class="fas fa-check"></i> Validieren
-                                                    </button>
-                                                </div>
-                                                <div class="api-status" id="whatsappApiStatus"></div>
-                                            </div>
-                                            
-                                            <div class="input-group">
-                                                <label>Mistral AI Modell</label>
+                                                <label>🤖 KI-Modell auswählen</label>
                                                 <div class="model-select-wrapper">
-                                                    <select id="whatsappModelSelect" class="model-select">
-                                                        <optgroup label="Mistral Modelle">
-                                                            <option value="mistral-large-latest">Mistral Large (neueste Version)</option>
+                                                    <select id="whatsappModelSelect" class="model-select" onchange="handleModelChange('whatsapp')">
+                                                        <optgroup label="🔵 Mistral AI Modelle">
+                                                            <option value="mistral-large-latest">Mistral Large (Leistungsstark)</option>
                                                             <option value="mistral-medium-latest">Mistral Medium</option>
                                                             <option value="mistral-small-latest">Mistral Small</option>
                                                             <option value="open-mistral-7b">Open Mistral 7B</option>
                                                             <option value="open-mixtral-8x7b">Open Mixtral 8x7B</option>
                                                             <option value="open-mixtral-8x22b">Open Mixtral 8x22B</option>
                                                         </optgroup>
+                                                        <optgroup label="🟢 Google Gemini Modelle (Kostenlos)">
+                                                            <option value="gemini-1.5-flash">Gemini 1.5 Flash ⚡ (Schnell - €0.35/1M)</option>
+                                                            <option value="gemini-1.5-pro">Gemini 1.5 Pro 🧠 (Intelligent - €7/1M)</option>
+                                                            <option value="gemini-pro">Gemini Pro (Standard)</option>
+                                                        </optgroup>
                                                     </select>
-                                                    <div class="model-info">
-                                                        <i class="fas fa-info-circle"></i>
-                                                        <span class="model-tooltip">Wählen Sie ein Mistral Modell basierend auf Ihren Anforderungen an Leistung und Kosten.</span>
-                                                    </div>
                                                 </div>
+                                            </div>
+                                            
+                                            <div class="input-group">
+                                                <label id="whatsappApiKeyLabel">API-Schlüssel</label>
+                                                <div class="api-input-group">
+                                                    <input type="password" id="whatsappMistralKey" placeholder="API-Schlüssel eingeben..." class="api-key-field">
+                                                    <button class="btn secondary validate-api-btn" onclick="validateApiKey('whatsapp')">
+                                                        <i class="fas fa-check"></i> Validieren
+                                                    </button>
+                                                </div>
+                                                <div class="api-status" id="whatsappApiStatus"></div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
 
                             <div class="setting-group">
                                 <label>🤖 Agent-Funktionen (API-Verbindungen)</label>

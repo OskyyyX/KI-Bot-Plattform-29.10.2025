@@ -1052,11 +1052,208 @@ class AgentSystem {
     }
 }
 
+// Google Gemini AI API Management
+class GeminiManager {
+    constructor(agentSystem) {
+        this.agentSystem = agentSystem;
+        this.apiKey = null;
+        this.websiteModel = localStorage.getItem('website_gemini_model') || 'gemini-1.5-flash';
+        this.whatsappModel = localStorage.getItem('whatsapp_gemini_model') || 'gemini-1.5-flash';
+    }
+
+    async callGemini(botType, userMessage, uploadedFiles = []) {
+        const apiKey = localStorage.getItem(`${botType}_gemini_api_key`) || localStorage.getItem('gemini_api_key');
+        
+        if (!apiKey) {
+            throw new Error('❌ Kein Gemini API Key konfiguriert! Bitte API-Schlüssel eingeben.');
+        }
+
+        const model = this[`${botType}Model`];
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+        // System Prompt erstellen
+        const systemPrompt = this.buildSystemPrompt(botType, uploadedFiles);
+        
+        // Gemini API Request
+        const requestBody = {
+            contents: [{
+                parts: [
+                    { text: systemPrompt },
+                    { text: userMessage }
+                ]
+            }],
+            generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 2000
+            }
+        };
+
+        console.log('🔷 Gemini Request:', model);
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error?.message || `Gemini API Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+            throw new Error('Ungültige Gemini API Antwort');
+        }
+
+        const responseText = data.candidates[0].content.parts[0].text;
+        
+        // Prüfe ob Calendar-Anfrage
+        if (responseText.includes('CALENDAR_REQUEST:')) {
+            return await this.handleCalendarRequest(botType, responseText, userMessage);
+        }
+
+        return responseText;
+    }
+
+    buildSystemPrompt(botType, uploadedFiles) {
+        const heute = new Date();
+        const datumString = heute.toLocaleDateString('de-DE', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        let prompt = `📅 WICHTIG: Heute ist ${datumString}. Beachte dieses Datum bei allen zeitlichen Anfragen!\n\n`;
+        
+        // Bot Persönlichkeit
+        const personality = localStorage.getItem(`${botType}_bot_personality`) || 
+            'Du bist ein freundlicher und hilfsbereiter deutscher Assistent. Antworte immer auf Deutsch.';
+        prompt += personality + '\n\n';
+
+        // Agent-Fähigkeiten (Calendar)
+        const googleCalendarEnabled = this.agentSystem.agents[botType].googleCalendar.enabled;
+        
+        if (googleCalendarEnabled) {
+            prompt += '🤖 **AGENT-FÄHIGKEITEN - Google Calendar:**\n';
+            prompt += 'Du hast Zugriff auf den Google Kalender des Benutzers!\n\n';
+            prompt += 'Wenn der Benutzer nach Terminen fragt, antworte EXAKT so:\n';
+            prompt += 'CALENDAR_REQUEST: [Zeitraum]\n\n';
+            prompt += 'Beispiele:\n';
+            prompt += '- "Welche Termine habe ich morgen?" → CALENDAR_REQUEST: morgen\n';
+            prompt += '- "Was steht nächste Woche an?" → CALENDAR_REQUEST: nächste Woche\n';
+            prompt += '- "Zeig mir meine Termine heute" → CALENDAR_REQUEST: heute\n\n';
+        }
+
+        // Hochgeladene Dateien (Wissensbasis)
+        if (uploadedFiles.length > 0) {
+            prompt += '📁 **WISSENSBASIS:**\n';
+            prompt += 'Du hast Zugriff auf folgende hochgeladene Dokumente:\n\n';
+            uploadedFiles.forEach((file, index) => {
+                prompt += `--- DOKUMENT ${index + 1}: ${file.name} ---\n`;
+                prompt += `Dateityp: ${file.type}\n`;
+                prompt += `Inhalt:\n${file.content.substring(0, 8000)}\n\n`;
+            });
+            prompt += '\n💡 **WICHTIG:** Beantworte Fragen basierend auf diesen Dokumenten. Wenn die Antwort in den Dokumenten steht, zitiere relevante Teile.\n\n';
+        }
+
+        return prompt;
+    }
+
+    async handleCalendarRequest(botType, response, originalMessage) {
+        try {
+            // Parse Zeitraum aus Response
+            const zeitraumMatch = response.match(/CALENDAR_REQUEST:\s*(.+)/i);
+            if (!zeitraumMatch) {
+                return response.replace(/CALENDAR_REQUEST:.+/i, '');
+            }
+
+            const zeitraum = zeitraumMatch[1].trim();
+            console.log('📅 Calendar Request erkannt:', zeitraum);
+
+            // Berechne Start/End Datum
+            const { start, end } = this.parseZeitraum(zeitraum);
+
+            // Rufe Google Calendar API ab
+            const result = await this.agentSystem.listCalendarEvents(
+                botType, 
+                start.toISOString(), 
+                end.toISOString()
+            );
+
+            if (result.success && result.events) {
+                let eventText = `📅 **Deine Termine (${zeitraum}):**\n\n`;
+                
+                if (result.events.length === 0) {
+                    eventText = `✅ Du hast keine Termine ${zeitraum}.`;
+                } else {
+                    result.events.forEach((event, i) => {
+                        const startDate = new Date(event.start.dateTime || event.start.date);
+                        eventText += `${i + 1}. **${event.summary || 'Kein Titel'}**\n`;
+                        eventText += `   🕐 ${startDate.toLocaleString('de-DE')}\n`;
+                        if (event.location) eventText += `   📍 ${event.location}\n`;
+                        if (event.description) eventText += `   📝 ${event.description.substring(0, 100)}\n`;
+                        eventText += '\n';
+                    });
+                }
+                
+                return eventText;
+            } else {
+                return `⚠️ ${result.message || 'Fehler beim Abrufen der Termine. Bitte stelle sicher, dass Google Calendar verbunden ist.'}`;
+            }
+
+        } catch (error) {
+            console.error('Calendar Request Error:', error);
+            return `⚠️ Fehler beim Abrufen der Kalender-Daten: ${error.message}`;
+        }
+    }
+
+    parseZeitraum(zeitraum) {
+        const heute = new Date();
+        let start = new Date(heute);
+        let end = new Date(heute);
+
+        const zeitraumLower = zeitraum.toLowerCase();
+
+        if (zeitraumLower.includes('morgen')) {
+            start.setDate(heute.getDate() + 1);
+            start.setHours(0, 0, 0, 0);
+            end.setDate(heute.getDate() + 1);
+            end.setHours(23, 59, 59, 999);
+        } else if (zeitraumLower.includes('nächste woche') || zeitraumLower.includes('naechste woche')) {
+            // Nächster Montag
+            const tagBisMonatg = (8 - heute.getDay()) % 7 || 7;
+            start.setDate(heute.getDate() + tagBisMonatg);
+            start.setHours(0, 0, 0, 0);
+            end.setDate(start.getDate() + 6);
+            end.setHours(23, 59, 59, 999);
+        } else if (zeitraumLower.includes('diese woche')) {
+            // Montag dieser Woche
+            const tagBisMonatg = heute.getDay() === 0 ? -6 : 1 - heute.getDay();
+            start.setDate(heute.getDate() + tagBisMonatg);
+            start.setHours(0, 0, 0, 0);
+            end.setDate(start.getDate() + 6);
+            end.setHours(23, 59, 59, 999);
+        } else {
+            // Heute (Standard)
+            start.setHours(0, 0, 0, 0);
+            end.setHours(23, 59, 59, 999);
+        }
+
+        return { start, end };
+    }
+}
+
 // Mistral AI API Management
 class ChatManager {
     constructor(mistralManager, agentSystem) {
         this.mistralManager = mistralManager;
         this.agentSystem = agentSystem;
+        this.geminiManager = new GeminiManager(agentSystem);
         this.conversations = {
             website: [],
             whatsapp: []
@@ -1259,6 +1456,43 @@ class ChatManager {
 
         this.addMessage(botType, message, true);
 
+        // 🆕 Prüfe ob Gemini oder Mistral verwendet werden soll
+        const useGemini = localStorage.getItem(`${botType}_use_gemini`) === 'true';
+        
+        if (useGemini) {
+            return await this.sendGeminiMessage(botType, message);
+        } else {
+            return await this.sendMistralMessage(botType, message);
+        }
+    }
+
+    async sendGeminiMessage(botType, message) {
+        // Zeige Lade-Indikator
+        const loadingMsg = document.createElement('div');
+        loadingMsg.className = 'chat-message bot';
+        loadingMsg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Denke nach (Gemini)...';
+        const chat = document.getElementById(`${botType}BotChat`);
+        chat.appendChild(loadingMsg);
+        chat.scrollTop = chat.scrollHeight;
+
+        try {
+            const uploadedFiles = fileManager.files[botType] || [];
+            const response = await this.geminiManager.callGemini(botType, message, uploadedFiles);
+            
+            // Entferne Lade-Indikator
+            chat.removeChild(loadingMsg);
+            
+            // Zeige Antwort
+            this.addMessage(botType, response, false);
+            
+        } catch (error) {
+            console.error('Gemini Error:', error);
+            chat.removeChild(loadingMsg);
+            this.addMessage(botType, `⚠️ Gemini Fehler: ${error.message}`, false);
+        }
+    }
+
+    async sendMistralMessage(botType, message) {
         // API-Key direkt aus dem Input-Feld holen und validieren
         const apiKeyInput = document.getElementById(botType === 'whatsapp' ? 'whatsappMistralKey' : 'apiKeyInput');
         const currentApiKey = apiKeyInput?.value?.trim() || '';
@@ -1356,38 +1590,81 @@ class ChatManager {
                 content: message
             });
             
-            // Bereite API-Request vor
-            const requestBody = {
-                model: this.mistralManager[`${botType}Model`] || "mistral-large-latest",
-                messages: messages,
-                temperature: 0.7,
-                max_tokens: 2000
-            };
+            // Verfügbare Modelle in Reihenfolge (vom besten zum günstigsten als Fallback)
+            const availableModels = [
+                this.mistralManager[`${botType}Model`] || "mistral-large-latest",
+                "mistral-small-latest",
+                "open-mistral-7b",
+                "open-mixtral-8x7b"
+            ];
 
-            // Füge Tools hinzu, falls verfügbar (Mistral AI Function Calling)
-            if (availableTools.length > 0) {
-                requestBody.tools = availableTools;
-                requestBody.tool_choice = 'auto';
+            let response = null;
+            let lastError = null;
+            let usedModel = null;
+
+            // Versuche Modelle in Reihenfolge bis eines funktioniert
+            for (const model of availableModels) {
+                try {
+                    // Bereite API-Request vor
+                    const requestBody = {
+                        model: model,
+                        messages: messages,
+                        temperature: 0.7,
+                        max_tokens: 2000
+                    };
+
+                    // Füge Tools hinzu, falls verfügbar (Mistral AI Function Calling)
+                    if (availableTools.length > 0) {
+                        requestBody.tools = availableTools;
+                        requestBody.tool_choice = 'auto';
+                    }
+                    
+                    console.log(`🔄 Versuche Modell: ${model}`);
+                    
+                    // Anfrage an Mistral AI-API senden
+                    response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+
+                    // Wenn erfolgreich (Status 200), beende die Schleife
+                    if (response.ok) {
+                        usedModel = model;
+                        console.log(`✅ Erfolgreich mit Modell: ${model}`);
+                        break;
+                    }
+
+                    // Bei 503 (Service unavailable) oder 529 (capacity exceeded) - versuche nächstes Modell
+                    const errorData = await response.json().catch(() => ({}));
+                    if (response.status === 503 || response.status === 529 || 
+                        (errorData.message && errorData.message.includes('capacity exceeded'))) {
+                        console.warn(`⚠️ Modell ${model} überlastet, versuche nächstes...`);
+                        lastError = `Modell ${model} überlastet`;
+                        continue; // Versuche nächstes Modell
+                    }
+
+                    // Bei anderen Fehlern (401, 400, etc.) - sofort abbrechen
+                    lastError = errorData.message || response.statusText;
+                    break;
+
+                } catch (fetchError) {
+                    console.error(`❌ Fehler mit Modell ${model}:`, fetchError);
+                    lastError = fetchError.message;
+                    continue; // Versuche nächstes Modell
+                }
             }
-            
-            // Anfrage an Mistral AI-API senden
-            const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${apiKey}`
-                },
-                body: JSON.stringify(requestBody)
-            });
 
             // Entferne Lade-Indikator
             chat.removeChild(loadingMsg);
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                let errorMessage = `API-Fehler (${response.status}): `;
+            if (!response || !response.ok) {
+                let errorMessage = `API-Fehler: `;
                 
-                if (response.status === 401) {
+                if (response && response.status === 401) {
                     errorMessage += "Ungültiger API-Schlüssel.\n\n";
                     errorMessage += "📋 So beheben Sie das Problem:\n";
                     errorMessage += "1. Geben Sie Ihren Mistral AI API-Key oben ein\n";
@@ -1395,18 +1672,24 @@ class ChatManager {
                     errorMessage += "3. Warten Sie auf die grüne Bestätigung\n";
                     errorMessage += "4. Versuchen Sie es dann erneut\n\n";
                     errorMessage += "💡 Sie benötigen einen API-Key von: https://console.mistral.ai/";
-                } else if (response.status === 429) {
+                } else if (response && response.status === 429) {
                     errorMessage += "Rate Limit erreicht. Bitte warten Sie einen Moment.";
-                } else if (response.status === 400) {
+                } else if (response && response.status === 400) {
+                    const errorData = await response.json().catch(() => ({}));
                     errorMessage += errorData.message || "Ungültige Anfrage. Überprüfen Sie die Parameter.";
                 } else {
-                    errorMessage += errorData.message || response.statusText || "Unbekannter Fehler";
+                    errorMessage += lastError || "Alle Modelle sind derzeit überlastet. Bitte versuchen Sie es später erneut.";
                 }
                 
                 throw new Error(errorMessage);
             }
 
             const data = await response.json();
+            
+            // Zeige verwendetes Modell an (falls Fallback verwendet wurde)
+            if (usedModel !== (this.mistralManager[`${botType}Model`] || "mistral-large-latest")) {
+                this.addMessage(botType, `ℹ️ Hinweis: Primäres Modell überlastet. Verwende ${usedModel} als Fallback.`, false);
+            }
             
             if (!data.choices || !data.choices[0] || !data.choices[0].message) {
                 throw new Error("Ungültige Antwortstruktur von der API");
@@ -1784,12 +2067,141 @@ window.sendBotInstruction = function(botType) {
     mistralManager.chatManager.sendBotInstruction(botType);
 };
 
-window.validateApiKey = function() {
-    mistralManager.validateApiKey('website');
+// 🆕 UNIFIED API VALIDATION - erkennt automatisch Mistral oder Gemini
+window.validateApiKey = async function(botType) {
+    const keyInputId = botType === 'whatsapp' ? 'whatsappMistralKey' : 'apiKeyInput';
+    const keyInput = document.getElementById(keyInputId);
+    const statusDiv = document.getElementById(`${botType}ApiStatus`);
+    
+    const apiKey = keyInput.value.trim();
+    
+    if (!apiKey) {
+        statusDiv.innerHTML = '<span class="error">⚠️ Bitte API-Schlüssel eingeben!</span>';
+        return;
+    }
+    
+    // Hole ausgewähltes Modell
+    const modelSelectId = botType === 'whatsapp' ? 'whatsappModelSelect' : 'modelSelect';
+    const modelSelect = document.getElementById(modelSelectId);
+    const selectedModel = modelSelect.value;
+    
+    statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validiere...';
+    
+    // Prüfe ob Gemini oder Mistral basierend auf Modell
+    const isGemini = selectedModel.startsWith('gemini');
+    
+    try {
+        if (isGemini) {
+            // Validiere Gemini API
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro?key=${apiKey}`);
+            
+            if (response.ok) {
+                statusDiv.innerHTML = '<span class="success">✅ Gemini API-Schlüssel gültig!</span>';
+                localStorage.setItem(`${botType}_gemini_api_key`, apiKey);
+                localStorage.setItem(`${botType}_use_gemini`, 'true');
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                statusDiv.innerHTML = `<span class="error">❌ Ungültiger Gemini-Schlüssel: ${errorData.error?.message || response.status}</span>`;
+            }
+        } else {
+            // Validiere Mistral API
+            const response = await fetch("https://api.mistral.ai/v1/models", {
+                headers: {
+                    "Authorization": `Bearer ${apiKey}`
+                }
+            });
+            
+            if (response.ok) {
+                statusDiv.innerHTML = '<span class="success">✅ Mistral AI API-Schlüssel gültig!</span>';
+                localStorage.setItem(`${botType}_mistral_api_key`, apiKey);
+                if (botType === 'website') localStorage.setItem("mistral_api_key", apiKey);
+                localStorage.setItem(`${botType}_use_gemini`, 'false');
+            } else {
+                statusDiv.innerHTML = '<span class="error">❌ Ungültiger Mistral-Schlüssel!</span>';
+            }
+        }
+    } catch (error) {
+        statusDiv.innerHTML = `<span class="error">❌ Fehler: ${error.message}</span>`;
+    }
+};
+
+// 🆕 HANDLE MODEL CHANGE - aktualisiert Label und Placeholder
+window.handleModelChange = function(botType) {
+    const modelSelectId = botType === 'whatsapp' ? 'whatsappModelSelect' : 'modelSelect';
+    const modelSelect = document.getElementById(modelSelectId);
+    const selectedModel = modelSelect.value;
+    
+    const isGemini = selectedModel.startsWith('gemini');
+    
+    // Update API-Key Label
+    const labelId = `${botType}ApiKeyLabel`;
+    const label = document.getElementById(labelId);
+    if (label) {
+        label.textContent = isGemini ? 'Google Gemini API-Schlüssel' : 'Mistral AI API-Schlüssel';
+    }
+    
+    // Update Placeholder
+    const keyInputId = botType === 'whatsapp' ? 'whatsappMistralKey' : 'apiKeyInput';
+    const keyInput = document.getElementById(keyInputId);
+    if (keyInput) {
+        keyInput.placeholder = isGemini 
+            ? 'Google Gemini API-Schlüssel (AIza...)' 
+            : 'Mistral AI API-Schlüssel eingeben...';
+    }
+    
+    // Lade gespeicherten API-Key
+    const savedKey = isGemini 
+        ? localStorage.getItem(`${botType}_gemini_api_key`) 
+        : localStorage.getItem(`${botType}_mistral_api_key`) || localStorage.getItem("mistral_api_key");
+    
+    if (keyInput && savedKey) {
+        keyInput.value = savedKey;
+    }
+    
+    // Speichere Modell-Auswahl
+    if (isGemini) {
+        localStorage.setItem(`${botType}_gemini_model`, selectedModel);
+        localStorage.setItem(`${botType}_use_gemini`, 'true');
+        if (mistralManager.chatManager.geminiManager) {
+            mistralManager.chatManager.geminiManager[`${botType}Model`] = selectedModel;
+        }
+    } else {
+        localStorage.setItem(`${botType}_model`, selectedModel);
+        localStorage.setItem(`${botType}_use_gemini`, 'false');
+        mistralManager[`${botType}Model`] = selectedModel;
+    }
+    
+    console.log(`� ${botType} Model: ${selectedModel} (${isGemini ? 'Gemini' : 'Mistral'})`);
+};
+
+// 🆕 SAVE API KEY - universal für beide APIs
+window.saveApiKey = function(botType) {
+    const keyInputId = botType === 'whatsapp' ? 'whatsappMistralKey' : 'apiKeyInput';
+    const keyInput = document.getElementById(keyInputId);
+    const apiKey = keyInput.value.trim();
+    
+    if (!apiKey) {
+        alert('⚠️ Bitte API-Schlüssel eingeben!');
+        return;
+    }
+    
+    // Prüfe ob Gemini oder Mistral
+    const modelSelectId = botType === 'whatsapp' ? 'whatsappModelSelect' : 'modelSelect';
+    const modelSelect = document.getElementById(modelSelectId);
+    const isGemini = modelSelect.value.startsWith('gemini');
+    
+    if (isGemini) {
+        localStorage.setItem(`${botType}_gemini_api_key`, apiKey);
+        alert('✅ Gemini API-Schlüssel gespeichert!');
+    } else {
+        localStorage.setItem(`${botType}_mistral_api_key`, apiKey);
+        if (botType === 'website') localStorage.setItem("mistral_api_key", apiKey);
+        alert('✅ Mistral AI API-Schlüssel gespeichert!');
+    }
 };
 
 window.validateWhatsappApiKey = function() {
-    mistralManager.validateApiKey('whatsapp');
+    validateApiKey('whatsapp');
 };
 
 window.saveAgentConfig = function(botType, apiType) {
@@ -2346,7 +2758,55 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize counters
     updateApiCounter('website');
     updateApiCounter('whatsapp');
+    
+    // 🆕 Load saved model selections and API keys
+    loadModelAndApiSettings();
 });
+
+// 🆕 Load Model and API Settings on Page Load
+function loadModelAndApiSettings() {
+    ['website', 'whatsapp'].forEach(botType => {
+        const modelSelectId = botType === 'whatsapp' ? 'whatsappModelSelect' : 'modelSelect';
+        const modelSelect = document.getElementById(modelSelectId);
+        
+        if (!modelSelect) return;
+        
+        // Prüfe ob Gemini verwendet werden soll
+        const useGemini = localStorage.getItem(`${botType}_use_gemini`) === 'true';
+        
+        if (useGemini) {
+            // Lade Gemini-Modell
+            const geminiModel = localStorage.getItem(`${botType}_gemini_model`) || 'gemini-1.5-flash';
+            modelSelect.value = geminiModel;
+            
+            // Lade Gemini API-Key
+            const geminiKey = localStorage.getItem(`${botType}_gemini_api_key`);
+            if (geminiKey) {
+                const keyInputId = botType === 'whatsapp' ? 'whatsappMistralKey' : 'apiKeyInput';
+                const keyInput = document.getElementById(keyInputId);
+                if (keyInput) keyInput.value = geminiKey;
+            }
+        } else {
+            // Lade Mistral-Modell
+            const mistralModel = localStorage.getItem(`${botType}_model`) || 'mistral-large-latest';
+            modelSelect.value = mistralModel;
+            
+            // Lade Mistral API-Key
+            const mistralKey = localStorage.getItem(`${botType}_mistral_api_key`) 
+                || (botType === 'website' ? localStorage.getItem("mistral_api_key") : null);
+            if (mistralKey) {
+                const keyInputId = botType === 'whatsapp' ? 'whatsappMistralKey' : 'apiKeyInput';
+                const keyInput = document.getElementById(keyInputId);
+                if (keyInput) keyInput.value = mistralKey;
+            }
+        }
+        
+        // Trigger handleModelChange um Label zu aktualisieren
+        handleModelChange(botType);
+        
+        console.log(`📊 ${botType} Settings loaded: ${modelSelect.value} (${useGemini ? 'Gemini' : 'Mistral'})`);
+    });
+}
 
 // Load saved APIs on page load
 function loadSavedApis() {

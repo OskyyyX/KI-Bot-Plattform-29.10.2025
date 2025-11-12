@@ -121,16 +121,19 @@
                                     
                                     <div class="model-selection">
                                         <label>Mistral AI Modell</label>
-                                        <select id="modelSelect" class="model-select">
+                                        <select id="modelSelect" class="model-select" onchange="saveSelectedModel('website')">
                                             <optgroup label="Mistral Modelle">
-                                                <option value="mistral-large-latest">Mistral Large (neueste Version)</option>
-                                                <option value="mistral-medium-latest">Mistral Medium</option>
-                                                <option value="mistral-small-latest">Mistral Small</option>
-                                                <option value="open-mistral-7b">Open Mistral 7B</option>
-                                                <option value="open-mixtral-8x7b">Open Mixtral 8x7B</option>
-                                                <option value="open-mixtral-8x22b">Open Mixtral 8x22B</option>
+                                                <option value="mistral-large-latest">Mistral Large (neueste Version) - Beste Qualität</option>
+                                                <option value="mistral-medium-latest">Mistral Medium - Ausgewogen</option>
+                                                <option value="mistral-small-latest" selected>Mistral Small - Schnell & Günstig</option>
+                                                <option value="open-mistral-7b">Open Mistral 7B - Sehr günstig</option>
+                                                <option value="open-mixtral-8x7b">Open Mixtral 8x7B - Leistungsstark</option>
+                                                <option value="open-mixtral-8x22b">Open Mixtral 8x22B - Sehr leistungsstark</option>
                                             </optgroup>
                                         </select>
+                                        <small style="display: block; margin-top: 0.5rem; color: #666; font-size: 0.875rem;">
+                                            💡 <strong>Tipp:</strong> Mistral Small ist perfekt für Tests. Für komplexe Aufgaben nutze Large.
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -293,14 +296,14 @@
                                             <div class="input-group">
                                                 <label>Mistral AI Modell</label>
                                                 <div class="model-select-wrapper">
-                                                    <select id="whatsappModelSelect" class="model-select">
+                                                    <select id="whatsappModelSelect" class="model-select" onchange="saveSelectedModel('whatsapp')">
                                                         <optgroup label="Mistral Modelle">
-                                                            <option value="mistral-large-latest">Mistral Large (neueste Version)</option>
-                                                            <option value="mistral-medium-latest">Mistral Medium</option>
-                                                            <option value="mistral-small-latest">Mistral Small</option>
-                                                            <option value="open-mistral-7b">Open Mistral 7B</option>
-                                                            <option value="open-mixtral-8x7b">Open Mixtral 8x7B</option>
-                                                            <option value="open-mixtral-8x22b">Open Mixtral 8x22B</option>
+                                                            <option value="mistral-large-latest">Mistral Large (neueste Version) - Beste Qualität</option>
+                                                            <option value="mistral-medium-latest">Mistral Medium - Ausgewogen</option>
+                                                            <option value="mistral-small-latest" selected>Mistral Small - Schnell & Günstig</option>
+                                                            <option value="open-mistral-7b">Open Mistral 7B - Sehr günstig</option>
+                                                            <option value="open-mixtral-8x7b">Open Mixtral 8x7B - Leistungsstark</option>
+                                                            <option value="open-mixtral-8x22b">Open Mixtral 8x22B - Sehr leistungsstark</option>
                                                         </optgroup>
                                                     </select>
                                                     <div class="model-info">
@@ -482,12 +485,87 @@
     <script>
         // Basic JavaScript functionality
         function saveApiKey() {
-            const key = document.getElementById("apiKeyInput").value;
-            if (key && key.trim().length > 0) {
-                localStorage.setItem("mistral_api_key", key);
-                alert("Mistral AI API-Key gespeichert ✅");
-            } else {
-                alert("Ungültiger API-Key!");
+            const key = document.getElementById("apiKeyInput").value.trim();
+            if (!key) {
+                alert("❌ Bitte gib einen API-Schlüssel ein!");
+                return;
+            }
+            
+            // Speichere direkt (wie im funktionierenden Beispiel)
+            localStorage.setItem("mistral_api_key", key);
+            localStorage.setItem("website_mistral_api_key", key); // Für Bot-spezifische Nutzung
+            
+            // Zeige Erfolgsmeldung
+            const statusDiv = document.getElementById('websiteApiStatus');
+            if (statusDiv) {
+                statusDiv.innerHTML = '<span style="color: #10b981;">✅ API-Key gespeichert!</span>';
+            }
+            
+            console.log("✅ Mistral API-Key gespeichert!");
+            alert("✅ Mistral AI API-Key gespeichert!");
+        }
+
+        // Modell-Auswahl speichern
+        function saveSelectedModel(botType) {
+            const selectId = botType === 'website' ? 'modelSelect' : 'whatsappModelSelect';
+            const modelSelect = document.getElementById(selectId);
+            
+            if (!modelSelect) {
+                console.error('Modell-Select nicht gefunden:', selectId);
+                return;
+            }
+            
+            const selectedModel = modelSelect.value;
+            
+            // Speichere das gewählte Modell
+            localStorage.setItem(`${botType}_selected_model`, selectedModel);
+            localStorage.setItem('selected_model', selectedModel); // Fallback
+            
+            console.log(`✅ ${botType} Modell gespeichert:`, selectedModel);
+            
+            // Zeige Bestätigung mit Modell-Info
+            const modelName = modelSelect.options[modelSelect.selectedIndex].text;
+            const statusDiv = document.getElementById(botType === 'website' ? 'websiteApiStatus' : 'whatsappApiStatus');
+            if (statusDiv) {
+                statusDiv.innerHTML = `<span style="color: #10b981; font-weight: 600;">✅ Aktives Modell: ${modelName}</span>`;
+                setTimeout(() => {
+                    statusDiv.innerHTML = `<span style="color: #666; font-size: 0.875rem;">📊 Modell: ${selectedModel}</span>`;
+                }, 3000);
+            }
+        }
+        
+        // Lade gespeichertes Modell beim Seitenaufruf
+        function loadSavedModels() {
+            // Website Bot Modell laden
+            const websiteModel = localStorage.getItem('website_selected_model') || 
+                                 localStorage.getItem('selected_model') || 
+                                 'mistral-small-latest';
+            const websiteSelect = document.getElementById('modelSelect');
+            if (websiteSelect) {
+                websiteSelect.value = websiteModel;
+                console.log('✅ Website Bot Modell geladen:', websiteModel);
+                
+                // Zeige aktuelles Modell an
+                const statusDiv = document.getElementById('websiteApiStatus');
+                if (statusDiv) {
+                    statusDiv.innerHTML = `<span style="color: #666; font-size: 0.875rem;">📊 Aktives Modell: ${websiteModel}</span>`;
+                }
+            }
+            
+            // WhatsApp Bot Modell laden
+            const whatsappModel = localStorage.getItem('whatsapp_selected_model') || 
+                                  localStorage.getItem('selected_model') || 
+                                  'mistral-small-latest';
+            const whatsappSelect = document.getElementById('whatsappModelSelect');
+            if (whatsappSelect) {
+                whatsappSelect.value = whatsappModel;
+                console.log('✅ WhatsApp Bot Modell geladen:', whatsappModel);
+                
+                // Zeige aktuelles Modell an
+                const statusDiv = document.getElementById('whatsappApiStatus');
+                if (statusDiv) {
+                    statusDiv.innerHTML = `<span style="color: #666; font-size: 0.875rem;">📊 Aktives Modell: ${whatsappModel}</span>`;
+                }
             }
         }
 
@@ -540,6 +618,12 @@
                 clearInterval(googleApiCheckInterval);
             }
         }, 10000);
+        
+        // Lade gespeicherte Modelle beim Seitenstart
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSavedModels();
+            console.log('✅ Modell-Auswahl initialisiert');
+        });
     </script>
     
     <!-- Main Application Logic -->

@@ -1357,9 +1357,16 @@ class ChatManager {
                 content: message
             });
             
+            // Hole das ausgewählte Modell aus localStorage
+            const selectedModel = localStorage.getItem(`${botType}_selected_model`) || 
+                                 localStorage.getItem('selected_model') || 
+                                 'mistral-small-latest';
+            
+            console.log(`🤖 Verwende Mistral Modell: ${selectedModel}`);
+            
             // Bereite API-Request vor
             const requestBody = {
-                model: this.mistralManager[`${botType}Model`] || "mistral-large-latest",
+                model: selectedModel, // ✅ Verwendet das ausgewählte Modell!
                 messages: messages,
                 temperature: 0.7,
                 max_tokens: 2000
@@ -1371,73 +1378,24 @@ class ChatManager {
                 requestBody.tool_choice = 'auto';
             }
             
-            // ✅ VERBESSERTE RETRY-LOGIK - Erster Versuch sofort, dann Retry bei Fehler
-            const maxRetries = 3; // Max 3 Wiederholungen (= 4 Versuche insgesamt)
-            let attempt = 0;
-            let response;
-            let lastError;
-            
-            while (attempt <= maxRetries) {
-                try {
-                    // Zeige Retry-Status nur bei Wiederholungen (nicht beim ersten Mal)
-                    if (attempt > 0) {
-                        const waitSeconds = attempt * 2; // 2s, 4s, 6s
-                        loadingMsg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Wiederhole Anfrage (${attempt}/${maxRetries})... warte ${waitSeconds}s`;
-                        // Warte vor dem Retry
-                        await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
-                    }
-                    
-                    // Anfrage an Mistral AI-API senden
-                    response = await fetch("https://api.mistral.ai/v1/chat/completions", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Authorization": `Bearer ${apiKey}`
-                        },
-                        body: JSON.stringify(requestBody)
-                    });
-                    
-                    // ✅ Erfolg - breche Schleife ab
-                    if (response.ok) {
-                        console.log(`✅ Erfolg beim ${attempt === 0 ? 'ersten Versuch' : `${attempt + 1}. Versuch`}`);
-                        break;
-                    }
-                    
-                    // Prüfe ob Retry sinnvoll ist
-                    const errorData = await response.json().catch(() => ({}));
-                    
-                    // Bei Überlastung (429, 503) oder "capacity exceeded" -> Retry
-                    if (response.status === 429 || response.status === 503 || 
-                        (errorData.message && (errorData.message.includes('capacity exceeded') || 
-                         errorData.message.includes('rate limit')))) {
-                        
-                        console.warn(`⚠️ Server überlastet (${response.status}). Versuch ${attempt + 1}/${maxRetries + 1}`);
-                        
-                        attempt++;
-                        if (attempt <= maxRetries) {
-                            continue; // Nächster Versuch
-                        }
-                    }
-                    
-                    // Bei anderen Fehlern -> kein Retry
-                    lastError = errorData;
-                    break;
-                    
-                } catch (fetchError) {
-                    console.error('❌ Netzwerkfehler:', fetchError);
-                    attempt++;
-                    if (attempt <= maxRetries) {
-                        continue;
-                    }
-                    throw fetchError;
-                }
-            }
+            // ✅ EINFACHE API-ANFRAGE - KEIN RETRY!
+            // Anfrage an Mistral AI-API senden
+            const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiKey}`
+                },
+                body: JSON.stringify(requestBody)
+            });
 
             // Entferne Lade-Indikator
-            chat.removeChild(loadingMsg);
+            if (chat.contains(loadingMsg)) {
+                chat.removeChild(loadingMsg);
+            }
 
             if (!response.ok) {
-                const errorData = lastError || await response.json().catch(() => ({}));
+                const errorData = await response.json().catch(() => ({}));
                 let errorMessage = `API-Fehler (${response.status}): `;
                 
                 if (response.status === 401) {
@@ -1710,28 +1668,55 @@ class MistralManager {
         const apiKeyInput = document.getElementById(botType === 'whatsapp' ? 'whatsappMistralKey' : 'apiKeyInput');
         const statusDiv = document.getElementById(botType === 'whatsapp' ? 'whatsappApiStatus' : 'websiteApiStatus');
         
-        if (!apiKeyInput || !statusDiv) return;
+        if (!apiKeyInput || !statusDiv) {
+            console.error('API Key Input oder Status Div nicht gefunden');
+            return;
+        }
 
         const apiKey = apiKeyInput.value.trim();
+        
         if (!apiKey) {
-            this.showApiStatus(botType, false, 'Mistral AI API-Schlüssel ist erforderlich');
+            this.showApiStatus(botType, false, 'Bitte API-Schlüssel eingeben!');
             return;
         }
 
         try {
-            statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Überprüfe Mistral AI API-Schlüssel...';
+            statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Teste Mistral AI API-Schlüssel...';
             
-            const isValid = await this.testApiKey(apiKey);
+            // EXAKT wie im funktionierenden Beispiel
+            const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'mistral-small-latest',
+                    messages: [
+                        {
+                            role: 'user',
+                            content: 'Test'
+                        }
+                    ],
+                    max_tokens: 10
+                })
+            });
             
-            if (isValid) {
+            if (response.ok) {
+                // API Key ist gültig!
                 this[`${botType}ApiKey`] = apiKey;
                 localStorage.setItem("mistral_api_key", apiKey);
-                this.showApiStatus(botType, true, 'Mistral AI API-Schlüssel ist gültig');
+                localStorage.setItem(`${botType}_mistral_api_key`, apiKey);
+                this.showApiStatus(botType, true, '✅ Mistral AI API-Schlüssel ist gültig!');
+                console.log('✅ API-Key erfolgreich validiert und gespeichert');
             } else {
-                this.showApiStatus(botType, false, 'Ungültiger Mistral AI API-Schlüssel');
+                const errorData = await response.json().catch(() => ({}));
+                this.showApiStatus(botType, false, `❌ Ungültiger API-Schlüssel: ${errorData.message || response.status}`);
+                console.error('❌ API-Key Validierung fehlgeschlagen:', errorData);
             }
         } catch (error) {
-            this.showApiStatus(botType, false, 'Fehler bei der Validierung: ' + error.message);
+            this.showApiStatus(botType, false, `❌ Fehler: ${error.message}`);
+            console.error('❌ Validierungs-Fehler:', error);
         }
     }
 
@@ -2541,9 +2526,16 @@ window.sendChatMessage = async function(botType) {
             systemPrompt += 'Beachte das heutige Datum oben für relative Zeitangaben wie "morgen", "übermorgen", etc.';
         }
         
+        // Hole das ausgewählte Modell aus localStorage
+        const selectedModel = localStorage.getItem(`${botType}_selected_model`) || 
+                             localStorage.getItem('selected_model') || 
+                             'mistral-small-latest';
+        
+        console.log(`🤖 Verwende Mistral Modell: ${selectedModel}`);
+        
         // Baue Mistral AI Request
         const requestBody = {
-            model: 'mistral-large-latest',
+            model: selectedModel, // ✅ Verwendet das ausgewählte Modell!
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userMessage }
@@ -2558,69 +2550,19 @@ window.sendChatMessage = async function(botType) {
             requestBody.tool_choice = 'auto';
         }
         
-        // ✅ OPTIMIERTE RETRY-LOGIK - Erster Versuch sofort!
-        const maxRetries = 3;
-        let attempt = 0;
-        let response;
-        let lastError;
-        
-        while (attempt <= maxRetries) {
-            try {
-                // Zeige Retry-Status nur bei Wiederholungen
-                if (attempt > 0) {
-                    const waitSeconds = attempt * 2; // 2s, 4s, 6s
-                    typingDiv.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Wiederhole (${attempt}/${maxRetries})... ${waitSeconds}s`;
-                    // Warte VOR dem Retry
-                    await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
-                }
-                
-                // Rufe Mistral AI auf
-                response = await fetch('https://api.mistral.ai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-                
-                // ✅ Erfolg
-                if (response.ok) {
-                    console.log(`✅ Chat-Erfolg beim ${attempt === 0 ? 'ersten Versuch' : `${attempt + 1}. Versuch`}`);
-                    break;
-                }
-                
-                // Fehler analysieren
-                const errorData = await response.json().catch(() => ({}));
-                
-                // Bei Überlastung -> Retry
-                if (response.status === 429 || response.status === 503 || 
-                    (errorData.message && (errorData.message.includes('capacity exceeded') || 
-                     errorData.message.includes('rate limit')))) {
-                    
-                    console.warn(`⚠️ Chat-Server überlastet. Versuch ${attempt + 1}/${maxRetries + 1}`);
-                    
-                    attempt++;
-                    if (attempt <= maxRetries) {
-                        continue;
-                    }
-                }
-                
-                lastError = errorData;
-                break;
-                
-            } catch (fetchError) {
-                console.error('❌ Chat-Netzwerkfehler:', fetchError);
-                attempt++;
-                if (attempt <= maxRetries) {
-                    continue;
-                }
-                throw fetchError;
-            }
-        }
+        // ✅ EINFACHE API-ANFRAGE - KEIN RETRY!
+        // Rufe Mistral AI auf
+        const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify(requestBody)
+        });
         
         if (!response.ok) {
-            const errorData = lastError || await response.json().catch(() => ({}));
+            const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || `Mistral API Error: ${response.status}`);
         }
         
@@ -2628,7 +2570,9 @@ window.sendChatMessage = async function(botType) {
         const assistantMessage = data.choices[0].message;
         
         // Entferne Typing Indicator
-        typingDiv.remove();
+        if (typingDiv.parentNode) {
+            typingDiv.remove();
+        }
         
         // Prüfe ob Tool Calls vorhanden sind
         if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
